@@ -1,7 +1,9 @@
+import { useRef } from 'react'
 import { ArrowLeft, ArrowRight, Droplets, Thermometer, Waves, House, Bell, Settings, User, Trash2 } from 'lucide-react'
 
 type DetalleInvernaderoProps = {
   onVolver: () => void
+  onMediciones: () => void
   onControlRiego?: () => void
   onHistorialRiego?: () => void
 }
@@ -13,7 +15,8 @@ const navegacion = [
   { nombre: 'Perfil', icono: User },
 ]
 
-export default function DetalleInvernadero({ onVolver, onControlRiego, onHistorialRiego }: DetalleInvernaderoProps) {
+export default function DetalleInvernadero({ onVolver, onMediciones, onControlRiego, onHistorialRiego }: DetalleInvernaderoProps) {
+  const dialogo = useRef<HTMLDialogElement>(null)
   return (
     <div className="flex min-h-dvh flex-col bg-[#F5F8F5] text-[#233D32]">
       <header className="bg-[#E6F3E9] px-5 pb-5 pt-4">
@@ -53,6 +56,9 @@ export default function DetalleInvernadero({ onVolver, onControlRiego, onHistori
           </article>
           <p className="mt-3 text-sm text-[#64766A]">Sin datos disponibles</p>
           <p className="mt-1 text-xs text-[#64766A]">Última medición: —</p>
+          <button type="button" onClick={onMediciones} className="mt-4 flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border border-[#D8E1DA] bg-white px-4 py-3 text-left text-sm font-semibold focus-visible:outline-2 focus-visible:outline-green-700">
+            Monitoreo de mediciones <ArrowRight className="h-5 w-5" aria-hidden="true" />
+          </button>
         </section>
 
         <section aria-labelledby="sistema-riego">
@@ -81,13 +87,21 @@ export default function DetalleInvernadero({ onVolver, onControlRiego, onHistori
         </section>
         <button
           type="button"
-          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
+          onClick={() => dialogo.current?.showModal()} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
         >
           <Trash2 className="h-5 w-5" aria-hidden="true" />
           Eliminar invernadero
         </button>
       </main>
 
+      <dialog ref={dialogo} aria-labelledby="titulo-eliminar" aria-describedby="descripcion-eliminar" className="fixed inset-0 m-auto w-[calc(100%-2rem)] max-w-sm rounded-2xl bg-white p-6 text-[#233D32] shadow-xl backdrop:bg-black/50">
+        <h2 id="titulo-eliminar" className="text-xl font-semibold">¿Eliminar invernadero?</h2>
+        <p id="descripcion-eliminar" className="mt-3 text-sm text-[#64766A]">La eliminación todavía no está disponible. No se borrarán datos.</p>
+        <form method="dialog" className="mt-6 flex gap-3">
+          <button autoFocus className="min-h-11 flex-1 rounded-xl border border-[#D3DBD5] px-3">Cancelar</button>
+          <button type="button" disabled className="min-h-11 flex-1 rounded-xl bg-red-100 px-3 text-red-700 opacity-60">Eliminar</button>
+        </form>
+      </dialog>
       <nav aria-label="Navegación principal" className="sticky bottom-0 grid grid-cols-4 gap-1 bg-[#BCD7A7] px-2 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         {navegacion.map(({ nombre, icono: Icono }) => (
           <button key={nombre} type="button" onClick={nombre === 'Inicio' ? onVolver : undefined} className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-2xl focus-visible:outline-2 focus-visible:outline-[#28583A] ${nombre === 'Inicio' ? 'bg-[#DCEBD1] text-[#28583A]' : 'text-[#486D4D]'}`}>
@@ -99,4 +113,6 @@ export default function DetalleInvernadero({ onVolver, onControlRiego, onHistori
     </div>
   )
 }
+
+
 

@@ -42,7 +42,7 @@ export default function MisInvernaderos({ onRegistrar }: { onRegistrar: () => vo
 
         <section className="flex flex-1 flex-col items-center justify-center py-16 text-center">
           <Leaf className="mb-6 h-20 w-20 text-[#47885C]" strokeWidth={1.8} aria-hidden="true" />
-          <p className="max-w-64 text-base text-[#64766A]">Aquí aparecerán tus invernaderos.</p>
+          <p className="max-w-64 text-base text-[#64766A]">Pendiente</p>
         </section>
 
         <div className="mt-auto flex justify-end pt-8">
@@ -63,4 +63,5 @@ export default function MisInvernaderos({ onRegistrar }: { onRegistrar: () => vo
     </div>
   )
 }
+
 
