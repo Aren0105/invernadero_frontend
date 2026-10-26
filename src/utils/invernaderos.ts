@@ -1,8 +1,10 @@
 import isLength from 'validator/lib/isLength'
+import type { Invernadero } from '../types/invernaderos'
 
 /** Valores editables; las dimensiones conservan su texto hasta completar la validación. */
 export type FormularioInvernadero = { nombre: string; ubicacion: string; largo: string; ancho: string; alto: string; descripcion: string }
 export type DatosCrearInvernadero = { name: string; location: string; length: number; width: number; height?: number; description?: string }
+export type DatosActualizarInvernadero = Omit<DatosCrearInvernadero, 'height' | 'description'> & { height: number | null; description: string | null }
 export type ErroresInvernadero = Partial<Record<keyof FormularioInvernadero, string>>
 
 /** Replica los límites del DTO: dos decimales, dimensiones positivas y longitudes Unicode. */
@@ -30,4 +32,14 @@ export function datosCrearInvernadero(datos: FormularioInvernadero): DatosCrearI
     ...(datos.alto.trim() ? { height: Number(datos.alto) } : {}),
     ...(datos.descripcion ? { description: datos.descripcion } : {}),
   }
+}
+
+/** Precarga el formulario conservando los decimales entregados por PostgreSQL y los opcionales vacíos. */
+export function formularioDesdeInvernadero(datos: Invernadero): FormularioInvernadero {
+  return { nombre: datos.nombre, ubicacion: datos.ubicacion, largo: datos.largo ?? '', ancho: datos.ancho ?? '', alto: datos.alto ?? '', descripcion: datos.descripcion ?? '' }
+}
+
+/** Convierte una edición válida; null permite limpiar los opcionales sin enviar ni alterar el estado. */
+export function datosActualizarInvernadero(datos: FormularioInvernadero): DatosActualizarInvernadero {
+  return { ...datosCrearInvernadero(datos), height: datos.alto.trim() ? Number(datos.alto) : null, description: datos.descripcion || null }
 }

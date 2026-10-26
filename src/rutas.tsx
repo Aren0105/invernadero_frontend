@@ -73,7 +73,7 @@ export function RutaDetalle() {
   const ubicacion = useLocation()
   return esIdInvernadero(invernaderoId)
     ? <DetalleInvernadero key={invernaderoId} id={invernaderoId} recienCreado={ubicacion.state?.invernaderoCreado === invernaderoId}
-      onPerfil={() => navegar('/perfil')} onVolver={() => navegar('/invernaderos')} onMediciones={() => navegar('mediciones')} onConfigurar={() => navegar('equipo')} />
+      onPerfil={() => navegar('/perfil')} onVolver={() => navegar('/invernaderos')} onMediciones={() => navegar('mediciones')} onConfigurar={() => navegar('equipo')} onEditar={() => navegar('editar')} />
     : <NoEncontrada />
 }
 
