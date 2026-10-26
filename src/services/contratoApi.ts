@@ -35,7 +35,7 @@ export async function solicitarApi<T>(enviar: TransporteApi, ruta: string, opcio
     const mensajes: Record<number, string> = {
       400: 'Revisa los datos enviados. El servidor rechazó la operación.',
       401: 'Tu sesión no está disponible. Vuelve a iniciar sesión.',
-      403: 'No tienes permiso para administrar este recurso.',
+      403: 'No tienes permiso para acceder a este recurso.',
       404: 'El recurso no está disponible.',
       409: 'El registro ya existe o fue modificado. Actualiza los datos.',
       429: 'Se hicieron demasiadas solicitudes. Espera un momento.',
