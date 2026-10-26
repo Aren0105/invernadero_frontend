@@ -102,7 +102,7 @@ export function RutaTiempoReal() {
   if (!esIdInvernadero(invernaderoId)) return <NoEncontrada />
   const mediciones = `/invernaderos/${encodeURIComponent(invernaderoId)}/mediciones`
   if (!tiposSensor.includes(tipo as TipoSensor)) return <Navigate to={mediciones} replace />
-  return <MonitoreoTiempoReal tipo={tipo as TipoSensor} onVolver={() => navegar(mediciones)} />
+  return <MonitoreoTiempoReal key={`${invernaderoId}:${tipo}`} id={invernaderoId} tipo={tipo as TipoSensor} onVolver={() => navegar(mediciones)} />
 }
 
 export function RutaNoEncontrada() { return <NoEncontrada /> }

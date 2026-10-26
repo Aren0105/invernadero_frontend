@@ -278,6 +278,29 @@ export function crearGestorSesion({ enviar, coordinacion, ahora = Date.now }: De
   }
 
   return {
+    /** Autoriza exclusivamente adaptadores de canales: el token nunca se incorpora al contexto o estado de React.
+     * La capacidad deja de ser vigente al rotar el acceso, cambiar de cuenta, cerrar sesión o vencer.
+     */
+    async accesoParaCanal(signal: AbortSignal) {
+      signal.throwIfAborted()
+      if (vista.estado === 'inicializando') await restaurar()
+      await renovacion
+      const turno = generacion
+      const cuenta = vista.usuario?.id
+      if (vista.estado !== 'autenticada' || !cuenta) throw new Error('Inicia sesión para continuar.')
+      if ((vista.venceEn ?? 0) <= ahora() + 30000) await renovar()
+      signal.throwIfAborted()
+      comprobar(turno, true)
+      if (!acceso || vista.usuario?.id !== cuenta || vista.estado !== 'autenticada') throw new ErrorSesionCambiada()
+      const token = acceso
+      const venceEn = vista.venceEn!
+      return { token, venceEn, vigente: () => {
+        try {
+          comprobar(turno, true)
+          return !signal.aborted && vista.estado === 'autenticada' && vista.usuario?.id === cuenta && acceso === token && venceEn > ahora()
+        } catch { return false }
+      } }
+    },
     obtenerEstado: () => vista,
     suscribir(oyente: () => void) { oyentes.add(oyente); return () => { oyentes.delete(oyente) } },
     conectar() {

@@ -515,6 +515,46 @@ test('Autenticación web con acceso en memoria y refresh HttpOnly', async (t) =>
     }
   })
 
+  await t.test('el canal recibe acceso efímero que se invalida al renovar o cerrar sesión', async () => {
+    const { gestor } = cliente((ruta) => {
+      if (ruta === '/auth/login') return json(credenciales('original'))
+      if (ruta === '/auth/me') return json(usuario)
+      if (ruta === '/auth/refresh') return json(credenciales('renovado'))
+      if (ruta === '/auth/logout') return sinContenido()
+      assert.fail(`Ruta inesperada: ${ruta}`)
+    })
+    await gestor.iniciarSesion(usuario.email, 'clave-123')
+    const acceso = await gestor.accesoParaCanal(new AbortController().signal)
+    assert.equal(acceso.token, 'original')
+    assert.equal(acceso.vigente(), true)
+    assert.ok(!('accessToken' in gestor.obtenerEstado()))
+    await gestor.renovar()
+    assert.equal(acceso.vigente(), false)
+    const nuevo = await gestor.accesoParaCanal(new AbortController().signal)
+    assert.equal(nuevo.token, 'renovado')
+    assert.equal(nuevo.vigente(), true)
+    await gestor.cerrarSesion()
+    assert.equal(nuevo.vigente(), false)
+  })
+
+  await t.test('no entrega acceso al canal para una petición cancelada o una cuenta anónima', async () => {
+    const { gestor, llamadas } = cliente(() => json({}, 401))
+    const aborto = new AbortController()
+    aborto.abort()
+    await assert.rejects(gestor.accesoParaCanal(aborto.signal), { name: 'AbortError' })
+    assert.equal(llamadas.length, 0)
+    await gestor.restaurar()
+    await assert.rejects(gestor.accesoParaCanal(new AbortController().signal), /Inicia sesión/)
+  })
+
+  await t.test('renueva el acceso próximo a vencer antes de autorizar el canal', async () => {
+    const { gestor, llamadas } = cliente((ruta) => ruta === '/auth/login' ? json(credenciales('corto', usuario, 10)) : ruta === '/auth/me' ? json(usuario) : json(credenciales('nuevo')))
+    await gestor.iniciarSesion(usuario.email, 'clave-123')
+    const acceso = await gestor.accesoParaCanal(new AbortController().signal)
+    assert.equal(acceso.token, 'nuevo')
+    assert.equal(llamadas.filter(({ ruta }) => ruta === '/auth/refresh').length, 1)
+  })
+
   await t.test('si el cierre posterior al alta falla, conserva el aviso de cuenta creada', async () => {
     const { gestor } = cliente((ruta) => {
       if (ruta === '/auth/register') return json(credenciales(), 201)
