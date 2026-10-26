@@ -50,6 +50,6 @@ export default function HistorialSensores({ sensores, onTiempoReal }: Props) {
       onPagina={(pagina) => setSeleccion((actual) => ({ ...actual, pagina }))} />
     <Texto className="text-xs text-[#64766A]">Cuando una lectura no tiene hora de medición se utiliza su hora de recepción. Los datos enviados con retraso pueden actualizar el historial; Actualizar lecturas inicia una consulta nueva.</Texto>
     <Boton type="button" variante="verde" onClick={() => onTiempoReal(sensor.tipo)}><Radio className="h-5 w-5" aria-hidden="true" />Abrir pantalla de tiempo real</Boton>
-    <Texto className="text-center text-xs text-[#64766A]">La conexión en vivo se implementará por separado.</Texto>
+    <Texto className="text-center text-xs text-[#64766A]">En tiempo real podrás iniciar y detener una sesión con el equipo conectado.</Texto>
   </div>
 }

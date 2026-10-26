@@ -27,6 +27,7 @@ Sin esta variable, los servicios muestran un error de configuración al intentar
 - `npm run test:invernaderos`: comprueba la paginación, búsqueda, identificadores y errores con respuestas simuladas.
 - `npm run test:equipos`: verifica registro de invernadero, sensores, credenciales y activación con transporte simulado.
 - `npm run test:historial`: comprueba rangos de Perú, inventarios, unidades, paginación, grupos horarios y renderizado SVG con respuestas simuladas.
+- `npm run test:monitoreo`: verifica el ciclo de vida, renovaciones, secuencias y cancelación del canal con reloj y transporte simulados.
 - `npm run preview`: sirve la compilación para comprobarla localmente.
 
 ## Estructura
@@ -64,7 +65,7 @@ Se utiliza una instancia de `createBrowserRouter` creada fuera del renderizado d
 | `/invernaderos/:invernaderoId/mediciones/tiempo-real/:tipo` | Tiempo real | Sesión vigente |
 | Cualquier otra URL | Página no encontrada | Público |
 
-El parámetro `tipo` acepta `HumedadAmbiental`, `HumedadSuelo` o `NivelAgua`; otros valores redirigen a mediciones. Los identificadores se conservan como cadenas bigint. Detalle, edición, configuración e historial validan el formato y consultan el recurso autorizado. Configurar equipo verifica el rol vigente antes de consultar los recursos administrativos; una pertenencia OPERATOR recibe un aviso sin lanzar esas consultas. El historial obtiene su inventario mediante una ruta de lectura separada, válida tanto para ADMIN como para OPERATOR. La conexión del monitoreo en vivo sigue pendiente.
+El parámetro `tipo` acepta `HumedadAmbiental`, `HumedadSuelo` o `NivelAgua`; otros valores redirigen a mediciones. Los identificadores se conservan como cadenas bigint. Detalle, edición, configuración, historial y monitoreo validan el formato y consultan el recurso autorizado. Configurar equipo verifica el rol vigente antes de consultar los recursos administrativos; una pertenencia OPERATOR recibe un aviso sin lanzar esas consultas. Historial y monitoreo obtienen el inventario mediante una ruta de lectura separada, válida tanto para ADMIN como para OPERATOR.
 
 Las pantallas conservan sus callbacks de navegación; los adaptadores de `rutas.tsx` los conectan con `useNavigate`. Los botones Atrás y Adelante del navegador funcionan con el historial de URLs. `ScrollRestoration` recupera la posición al volver y reinicia el desplazamiento en nuevas entradas.
 
@@ -213,7 +214,27 @@ El servidor usa la fecha medida o, si falta, la de recepción. La interfaz prese
 
 La composición se divide en HistorialSensores (filtros y ventana fija), ConsultaHistorial (carga cancelable), ResumenHistorial y PaginacionHistorial. El transporte y la validación del contrato están en `services/historial.ts`; GraficaMediciones recibe datos y unidades por propiedades. Los comentarios y documentación se mantienen en español.
 
-`npm run test:historial` no usa cuentas ni bases reales. Incluye pruebas con respuestas HTTP simuladas y renderizado estático de las gráficas; no sustituye la comprobación interactiva en navegador ni el historial contra PostgreSQL desplegado. La nueva ruta de inventario debe desplegarse en el servidor para que la pantalla funcione con la API de Cloudflare. El acceso a la pantalla de tiempo real se conserva y se indica expresamente que su conexión en vivo se implementará después.
+`npm run test:historial` no usa cuentas ni bases reales. Incluye pruebas con respuestas HTTP simuladas y renderizado estático de las gráficas; no sustituye la comprobación interactiva en navegador ni el historial contra PostgreSQL desplegado. La ruta de inventario debe estar desplegada para que la pantalla funcione con la API de Cloudflare. Desde el historial se abre el monitoreo en vivo descrito en la siguiente sección.
+
+## Monitoreo en tiempo real
+
+La pantalla de tiempo real consulta el mismo inventario público que el historial y selecciona el tipo de la URL. Antes de cada inicio vuelve a comprobar el inventario y la sesión por HTTP, para no abrir un canal usando permisos o metadatos antiguos. Sin equipo, sensor o pertenencia no se habilita un inicio válido. El servidor revalida además JWT y permisos durante la conexión.
+
+`services/monitoreo.ts` adapta el cliente oficial socket.io-client al namespace /monitoring y al path /socket.io, usando VITE_API_URL. El token viaja exclusivamente en auth del protocolo, sin cookies del canal ni parámetros de URL. El gestor de sesión entrega una capacidad efímera para el adaptador, con vencimiento y comprobación de vigencia; el token no se publica en ContextoSesion ni en el estado de React. Si se renueva el acceso, cambia la cuenta, se cierra sesión o vence el acceso, el canal se cierra y exige un nuevo inicio explícito.
+
+La nueva verificación de origen del servidor reutiliza exactamente WEB_ORIGINS. No modifica configureApp, la lista configurada ni el CORS de HTTP. Se rechazan handshakes Socket.IO con Origin ajeno, vacío o null. Los clientes nativos sin Origin siguen permitidos, pero deben autenticarse; un nativo que envíe Origin debe utilizar uno permitido. El WebSocket del ESP32 continúa usando su protocolo y credencial independientes.
+
+El control se separa en gestorMonitoreo (máquina de estados y reloj sustituible), el adaptador Socket.IO, useMonitoreo (ciclo de vida de la pantalla) y SesionEnVivo (controles y presentación). Solo pulsar Iniciar crea una conexión nueva. No se habilitan reconexión ni reenvíos automáticos. Detener durante la autorización cancela el intento y evita abrir un socket después de abandonar la pantalla.
+
+monitoring.start solicita una frecuencia entre 1000 y 10000 ms. La aceptación inicial no implica que la placa haya confirmado: se muestra Solicitando hasta monitoring.state=active. El intervalo realmente aplicado puede ser más lento y se presenta por separado. Cada concesión se renueva con monitoring.renew cada 20 segundos, respetando su expiresAt; no se emite start para renovar.
+
+El gestor exige confirmaciones con un plazo de ocho segundos, limita la apertura del canal a diez segundos y termina la sesión si vence la concesión o dejan de recibirse muestras recientes. También interpreta estados de rechazo del driver, desconexión del equipo, apagado del servidor y pérdida de permisos. Se valida sensor, invernadero, controlador, tipo, unidad, requestId y secuencia antes de mostrar datos. Las secuencias repetidas, órdenes retiradas y respuestas de una conexión anterior se ignoran. Las estructuras de deduplicación y la gráfica están acotadas; se conservan únicamente las últimas 60 lecturas.
+
+Al detener, salir de la ruta, ocultar la pestaña o perder la red, se envía stop cuando es posible y se cierra la conexión con sus oyentes y temporizadores. Una caída de red puede impedir entregar stop; la limpieza del servidor y la concesión máxima de 60 segundos del firmware siguen siendo necesarias. La salida de una persona no detiene a los demás espectadores. Volver al primer plano nunca reanuda el envío automáticamente.
+
+La última lectura se mantiene como referencia al detener y muestra su fecha y antigüedad de recepción; no se presenta un valor antiguo como una muestra nueva. Si no hay hora de medición se usa la de recepción. Las unidades provienen del inventario y las muestras rápidas no se insertan en Medicion; la telemetría histórica periódica del equipo sigue siendo independiente.
+
+Las pruebas del cliente usan reloj y canal simulados y las pruebas de origen del servidor utilizan conexiones Socket.IO/WebSocket reales con autenticación simulada. No se modifican equipos ni cuentas reales y todavía debe comprobarse el flujo con el firmware físico y PostgreSQL desplegado. La validación de orígenes debe desplegarse con el servidor; WEB_ORIGINS debe incluir el origen real del frontend. El firmware actual de lectura local requiere integrar sus drivers y el arranque de comunicación para entregar muestras reales.
 
 ## Estado de funcionalidades
 
@@ -224,10 +245,10 @@ La composición se divide en HistorialSensores (filtros y ventana fija), Consult
 - Detalle: datos, acceso a edición y configuración de equipo conectados; control de riego pendiente. Se utiliza desactivación reversible en lugar del botón de eliminación pendiente.
 - Equipo: registro de ESP32, sensores, credenciales, activación y bloqueo conectados a la API existente.
 - Historial: conectado al inventario y la API de lecturas con unidades, estadísticas, fechas de Perú, agrupación y paginación.
-- Tiempo real: pantalla preparada; la suscripción y concesiones del canal en vivo siguen pendientes.
+- Tiempo real: conectado al canal Socket.IO, con inicio explícito, renovaciones, parada, lecturas y manejo de desconexiones; pendiente de verificación física.
 - Perfil y cierre de sesión: conectados; accesibles desde la navegación inferior. Filtros, notificaciones y configuración: pendientes de implementación.
 
-Las pantallas de detalle y mediciones pueden abrirse por URL con sesión y el detalle puede abrirse desde una tarjeta de la lista. Los valores de resumen de sensores en el detalle, el monitoreo en vivo y los actuadores permanecen pendientes de integración con sus respectivas pantallas. No se generan identificadores ni lecturas ficticias.
+Las pantallas de detalle y mediciones pueden abrirse por URL con sesión y el detalle puede abrirse desde una tarjeta de la lista. Los valores de resumen de sensores en el detalle y los actuadores permanecen pendientes de integración con sus respectivas pantallas. No se generan identificadores ni lecturas ficticias.
 
 ## Despliegue
 
