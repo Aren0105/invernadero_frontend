@@ -68,8 +68,8 @@ export default function RegistrarInvernadero({ onVolver }: RegistrarInvernaderoP
         </div>
 
         <div>
-          <label htmlFor="controlador" className="mb-1.5 block text-sm font-semibold">Código del controlador *</label>
-          <input id="controlador" aria-invalid={!!errores.controlador} aria-describedby={errores.controlador ? 'error-controlador' : undefined} name="controlador" required type="text" placeholder="Ej. CTRL-014" className={campo} />
+          <label htmlFor="controlador" className="mb-1.5 block text-sm font-semibold">Código del controlador (opcional)</label>
+          <input id="controlador" aria-invalid={!!errores.controlador} aria-describedby={errores.controlador ? 'error-controlador' : undefined} name="controlador" type="text" placeholder="Ej. CTRL-014" className={campo} />
           {errores.controlador && <p id="error-controlador" role="alert" className="mt-2 text-sm text-red-700">{errores.controlador}</p>}
         </div>
 

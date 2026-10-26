@@ -7,7 +7,7 @@ const navegacion = [
   { nombre: 'Perfil', icono: User },
 ]
 
-export default function MisInvernaderos({ onRegistrar }: { onRegistrar: () => void }) {
+export default function MisInvernaderos({ canRegistrar, onRegistrar }: { canRegistrar: boolean; onRegistrar: () => void }) {
   return (
     <div className="flex min-h-dvh flex-col bg-[#F5F8F5] text-[#233D32]">
       <header className="bg-[#BCD7A7] px-6 pb-7 pt-8">
@@ -45,11 +45,11 @@ export default function MisInvernaderos({ onRegistrar }: { onRegistrar: () => vo
           <p className="max-w-64 text-base text-[#64766A]">Pendiente</p>
         </section>
 
-        <div className="mt-auto flex justify-end pt-8">
+        {canRegistrar && <div className="mt-auto flex justify-end pt-8">
           <button type="button" aria-label="Agregar invernadero" onClick={onRegistrar} className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#47885C] text-white shadow-md hover:bg-[#386E49] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#47885C]">
             <Plus className="h-8 w-8" aria-hidden="true" />
           </button>
-        </div>
+        </div>}
       </main>
 
       <nav aria-label="Navegación principal" className="sticky bottom-0 grid grid-cols-4 gap-1 bg-[#BCD7A7] px-2 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">

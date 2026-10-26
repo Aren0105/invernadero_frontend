@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react'
 import { Eye, EyeOff, LoaderCircle } from 'lucide-react'
 import { validarFormulario, enfocarPrimerError } from '../utils/validacion'
-import { iniciarSesion } from '../services/api'
+import { iniciarSesion, type RolUsuario } from '../services/api'
 
-export default function Login({ onAcceso }: { onAcceso: (duracion: number) => void }) {
+export default function Login({ onAcceso, onRegistro }: { onAcceso: (duracion: number, rol: RolUsuario) => void; onRegistro: () => void }) {
   const [errores, setErrores] = useState<Record<string, string>>({})
   const [mostrarClave, setMostrarClave] = useState(false)
   const [aviso, setAviso] = useState('')
@@ -41,9 +41,9 @@ export default function Login({ onAcceso }: { onAcceso: (duracion: number) => vo
         enCurso.current = true
         setCargando(true)
         try {
-          const duracion = await iniciarSesion(String(datos.get('correo') ?? ''), password)
+          const sesion = await iniciarSesion(String(datos.get('correo') ?? ''), password)
           form.reset()
-          onAcceso(duracion)
+          onAcceso(sesion.expiresIn, sesion.role)
         } catch (error) {
           setErrorApi(error instanceof Error ? error.message : 'No se pudo iniciar sesión.')
         } finally {
@@ -67,6 +67,9 @@ export default function Login({ onAcceso }: { onAcceso: (duracion: number) => vo
         <button type="submit" disabled={cargando} className="mt-6 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#77AEC6] px-6 py-3 text-base font-semibold text-white disabled:cursor-wait disabled:opacity-60">
           {cargando && <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />}
           {cargando ? 'INICIANDO SESIÓN…' : 'INICIAR SESIÓN'}
+        </button>
+        <button type="button" onClick={onRegistro} disabled={cargando} className="mt-4 min-h-11 text-sm font-semibold text-[#54869C] disabled:opacity-60">
+          ¿No tienes cuenta? Regístrate
         </button>
         <p role="status" className="mt-4 text-sm text-[#52675A]">{aviso}</p>
       </form>
