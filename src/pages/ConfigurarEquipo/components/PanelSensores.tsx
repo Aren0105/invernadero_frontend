@@ -1,45 +1,45 @@
 import { useState } from 'react'
-import isLength from 'validator/lib/isLength'
-import Entrada from '../../../components/ui/Entrada'
-import Seleccion from '../../../components/ui/Seleccion'
 import Boton from '../../../components/ui/Boton'
 import { Texto, Titulo } from '../../../components/ui/Tipografia'
-import { nombresSensor, tiposSensor, type Sensor, type TipoSensor } from '../../../types/equipos'
+import { nombresSensor, tiposSensorRegistrables, type Sensor, type TipoSensor } from '../../../types/equipos'
+import FormularioSensor from './FormularioSensor'
 
-type Props = { sensores: Sensor[]; deshabilitado: boolean; onAgregar: (tipo: TipoSensor, unidad: string) => Promise<boolean> }
+type Props = {
+  sensores: Sensor[]; deshabilitado: boolean; controladorActivo: boolean
+  onAgregar: (tipo: TipoSensor) => Promise<boolean>
+  onEditar: (id: string, tipo: TipoSensor) => Promise<boolean>
+  onEliminar: (id: string) => Promise<boolean>
+}
 
-/** Lista los sensores reales y permite un registro por tipo; no configura pines ni valores de medición. */
-export default function PanelSensores({ sensores, deshabilitado, onAgregar }: Props) {
-  const [tipo, setTipo] = useState<TipoSensor>('HumedadAmbiental')
-  const [unidad, setUnidad] = useState('%')
-  const [error, setError] = useState('')
-  const disponibles = tiposSensor.filter((opcion) => !sensores.some((sensor) => sensor.tipo === opcion))
-  const seleccionado = disponibles.includes(tipo) ? tipo : disponibles[0]
+/** Administra registros; confirma la eliminación sin borrar ni reinterpretar el historial. */
+export default function PanelSensores({ sensores, deshabilitado, controladorActivo, onAgregar, onEditar, onEliminar }: Props) {
+  const [accion, setAccion] = useState<{ id: string; tipo: 'editar' | 'eliminar' } | null>(null)
+  const disponibles = tiposSensorRegistrables.filter((tipo) => !sensores.some((sensor) => sensor.tipo === tipo))
+  const bloqueado = deshabilitado || controladorActivo
   return <section className="space-y-4" aria-labelledby="titulo-sensores">
     <Titulo nivel={2} id="titulo-sensores" variante="seccion">2. SENSORES</Titulo>
     {!sensores.length && <Texto className="text-sm text-[#64766A]">No hay sensores registrados.</Texto>}
-    <ul className="space-y-3">{sensores.map((sensor) => <li key={sensor.id} className="rounded-xl border border-[#D8E1DA] p-3 text-sm">
+    <Texto className="text-xs text-[#64766A]">Para editar o eliminar, bloquea primero las comunicaciones del controlador en esta pantalla. Los sensores con mediciones conservan su tipo, unidad e historial.</Texto>
+    <ul className="space-y-3">{sensores.map((sensor) => <li key={sensor.id} className="space-y-2 rounded-xl border border-[#D8E1DA] p-3 text-sm">
       <strong>{nombresSensor[sensor.tipo]}</strong>
-      <Texto className="mt-1">ID: {sensor.id} · Unidad: {sensor.unidad}</Texto>
-      <Texto className="mt-1 text-[#64766A]">Último estado registrado: {sensor.conexion}</Texto>
+      <Texto>ID: {sensor.id} · Unidad: {sensor.unidad}</Texto>
+      <Texto className="text-[#64766A]">Último estado registrado: {sensor.conexion}</Texto>
+      {accion?.id === sensor.id ? accion.tipo === 'editar' ? <FormularioSensor
+        tipos={tiposSensorRegistrables.filter((tipo) => !sensores.some((otro) => otro.id !== sensor.id && otro.tipo === tipo))}
+        inicial={sensor.tipo} id={`editar-sensor-${sensor.id}`} deshabilitado={bloqueado} etiqueta="Guardar sensor"
+        onGuardar={async (tipo) => { if (await onEditar(sensor.id, tipo)) setAccion(null) }}
+        onCancelar={() => setAccion(null)} /> : <div className="space-y-2" role="group" aria-label="Confirmar eliminación del sensor">
+          <Texto>¿Eliminar {nombresSensor[sensor.tipo]}? Su identificador dejará de funcionar en la placa. Si tiene mediciones, el servidor rechazará la eliminación.</Texto>
+          <div className="flex flex-wrap gap-2">
+            <Boton type="button" variante="verde" disabled={bloqueado} onClick={() => { void onEliminar(sensor.id).then((ok) => { if (ok) setAccion(null) }) }}>Eliminar sensor</Boton>
+            <Boton type="button" disabled={deshabilitado} onClick={() => setAccion(null)} className="min-h-11 rounded-xl border px-4">Cancelar</Boton>
+          </div>
+        </div> : <div className="flex gap-2">
+          <Boton type="button" disabled={bloqueado} onClick={() => setAccion({ id: sensor.id, tipo: 'editar' })} className="min-h-11 rounded-xl border px-4 disabled:opacity-60" aria-label={`Editar ${nombresSensor[sensor.tipo]}`}>Editar</Boton>
+          <Boton type="button" disabled={bloqueado} onClick={() => setAccion({ id: sensor.id, tipo: 'eliminar' })} className="min-h-11 rounded-xl border border-red-300 px-4 text-red-700 disabled:opacity-60" aria-label={`Eliminar ${nombresSensor[sensor.tipo]}`}>Eliminar</Boton>
+        </div>}
     </li>)}</ul>
-    {disponibles.length ? <form noValidate className="space-y-3" onSubmit={(evento) => {
-      evento.preventDefault()
-      if (deshabilitado) return
-      if (!isLength(unidad.trim(), { min: 1, max: 10 })) { setError('La unidad debe tener entre 1 y 10 caracteres.'); return }
-      setError('')
-      void onAgregar(seleccionado, unidad)
-    }}>
-      <label htmlFor="tipo-sensor" className="block text-sm font-semibold">Tipo de sensor</label>
-      <Seleccion id="tipo-sensor" value={seleccionado} disabled={deshabilitado} onChange={(evento) => setTipo(evento.target.value as TipoSensor)}>
-        {disponibles.map((opcion) => <option key={opcion} value={opcion}>{nombresSensor[opcion]}</option>)}
-      </Seleccion>
-      <label htmlFor="unidad-sensor" className="block text-sm font-semibold">Unidad de medida</label>
-      <Entrada id="unidad-sensor" value={unidad} variante="redondeada" disabled={deshabilitado} onChange={(evento) => { setUnidad(evento.target.value); setError('') }}
-        placeholder="Ej. % o cm" aria-invalid={!!error} aria-describedby={error ? 'error-unidad' : 'ayuda-unidad'} />
-      <Texto id="ayuda-unidad" className="text-xs text-[#64766A]">Debe coincidir con los valores que envía la placa. La aplicación no convierte unidades.</Texto>
-      {error && <Texto id="error-unidad" role="alert" className="text-sm text-red-700">{error}</Texto>}
-      <Boton type="submit" variante="verde" disabled={deshabilitado} className="disabled:opacity-60">Agregar sensor</Boton>
-    </form> : <Texto className="text-sm text-[#64766A]">Ya registraste los tres tipos disponibles.</Texto>}
+    {disponibles.length ? <FormularioSensor key={disponibles.join(',')} tipos={disponibles} id="agregar-sensor" deshabilitado={deshabilitado || !!accion}
+      etiqueta="Agregar sensor" onGuardar={onAgregar} /> : <Texto className="text-sm text-[#64766A]">Ya registraste los cuatro tipos disponibles.</Texto>}
   </section>
 }

@@ -173,7 +173,7 @@ ConfigurarEquipo separa la coordinación en `useConfiguracionEquipo` y la presen
 | --- | --- | --- |
 | Consultar equipo | `GET /controllers?beforeId=...` | Recorre todas las páginas y localiza el único ESP32 del invernadero. |
 | Registrar ESP32 | `POST /controllers` | Envía greenhouseId y nombre; se crea desactivado. |
-| Consultar/agregar sensores | `GET/POST /controllers/:id/sensors` | Permite HumedadAmbiental, HumedadSuelo y NivelAgua, uno de cada tipo. |
+| Consultar/agregar sensores | `GET/POST /controllers/:id/sensors` | Permite HumedadAmbiental, Temperatura, HumedadSuelo y NivelAgua, uno de cada tipo. |
 | Consultar claves | `GET /controllers/:id/credentials?beforeId=...` | Recorre todas las páginas de metadatos; no conserva campos secretos adicionales. |
 | Emitir clave | `POST /controllers/:id/credentials` | Vencimiento opcional; muestra el original únicamente durante esa visita. |
 | Reemplazar claves | `POST /controllers/:id/credentials/rotate` | Requiere confirmación porque invalida las anteriores. |
@@ -200,7 +200,7 @@ El firmware local revisado en `esp32__client/esp32_monitoring/esp32_monitoring.i
 
 `/invernaderos/:invernaderoId/mediciones` consulta `GET /greenhouses/:id/sensors` para obtener el inventario público. Devuelve greenhouseId, controllerId (null cuando no hay equipo) e items con id, controllerId, type, unit y connectionStatus. La ruta requiere pertenencia ADMIN u OPERATOR al invernadero, sin exponer claves ni ampliar los permisos de administración de `/controllers`. Funciona aunque el invernadero esté desactivado o su equipo esté bloqueado. No requiere migraciones.
 
-La página distingue carga, error con reintento, invernadero sin equipo, equipo sin sensores y sensor sin lecturas en el período. El inventario es real: solo se ofrecen sensores registrados, incluidos HumedadAmbiental, HumedadSuelo y NivelAgua. Actualizar sensores vuelve a verificar el inventario; no se realizan consultas administrativas para descubrir IDs.
+La página distingue carga, error con reintento, invernadero sin equipo, equipo sin sensores y sensor sin lecturas en el período. El inventario es real: solo se ofrecen sensores registrados, incluidos HumedadAmbiental, Temperatura, HumedadSuelo y NivelAgua. Actualizar sensores vuelve a verificar el inventario; no se realizan consultas administrativas para descubrir IDs.
 
 El historial usa `GET /telemetry/sensors/:sensorId/history` con from, to, groupBy, page y limit. Hoy comienza a medianoche de Perú y termina al consultar; Últimos 7 días incluye los seis días anteriores y el día de la consulta. Se envían fechas explícitas ISO UTC: inicio incluido y final excluido. El intervalo permanece fijo al cambiar de página; Actualizar lecturas calcula una ventana nueva y vuelve a la primera página. Esta ventana fija evita que el período avance entre consultas, pero no equivale a una instantánea de PostgreSQL entre peticiones: las muestras enviadas con retraso pueden modificar resultados y conteos.
 
@@ -305,3 +305,12 @@ En botones, entradas y tarjetas, `className` añade ajustes a la variante. Evita
 ## Convenciones
 
 Los nombres del dominio y los comentarios del código se escriben en español. Las lecturas se ordenan y deduplican por fecha; los períodos y las etiquetas se calculan para Perú (`America/Lima`).
+
+
+### Administración del controlador y sensores
+
+La pantalla usa el término controlador y comparte un formulario para agregar y editar sensores. Los cuatro tipos son Temperatura (°C), Humedad ambiental (%), Humedad del suelo (%) y Nivel de agua (%); la unidad se asigna automáticamente. El historial y el canal en vivo aceptan temperatura bajo cero. HumedadAmbiental y Temperatura son registros independientes y pueden coexistir en el mismo controlador; nunca se convierten entre sí.
+
+Cada sensor tiene acciones de edición y eliminación con confirmación. Ambas requieren un controlador con comunicaciones bloqueadas y un sensor sin mediciones; el servidor protege el historial y vuelve a comprobar la pertenencia ADMIN. Después de cambiar un tipo o eliminar un registro, actualizar la configuración de la placa antes de habilitarla. Los enlaces existentes a `/equipo` siguen funcionando.
+
+Requiere desplegar el servidor con `PATCH` y `DELETE /controllers/:id/sensors/:sensorId` y aplicar primero la migración `1792771200011-AdmitirTemperatura`. No se aplican migraciones automáticamente desde React. Pendiente la verificación con PostgreSQL y sensores físicos reales.

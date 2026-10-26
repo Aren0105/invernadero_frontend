@@ -16,7 +16,7 @@ export default function EstadoInvernadero({ estado, ocupado, bloqueado, cambios,
   return <Tarjeta como="section" className="mt-6 space-y-3" aria-labelledby="titulo-estado">
     <Titulo nivel={2} id="titulo-estado" className="text-base font-semibold">Estado del invernadero</Titulo>
     <Texto className="text-sm">Estado actual: <strong>{nombresEstado[estado]}</strong></Texto>
-    <Texto className="text-sm text-[#64766A]">{desactivado ? 'Puedes reactivar este invernadero. Después deberás habilitar su ESP32 por separado si deseas recibir mediciones.' : 'Desactivar conservará los registros y el historial, y bloqueará las comunicaciones del equipo.'}</Texto>
+    <Texto className="text-sm text-[#64766A]">{desactivado ? 'Puedes reactivar este invernadero. Después deberás habilitar su ESP32 por separado si deseas recibir mediciones.' : 'Desactivar conservará los registros y el historial, y bloqueará las comunicaciones del controlador.'}</Texto>
     <Boton type="button" disabled={ocupado || bloqueado} onClick={() => dialogo.current?.showModal()}
       className={`min-h-12 w-full rounded-xl border px-4 text-sm font-semibold disabled:opacity-60 ${desactivado ? 'border-[#91A595] text-[#2F704B]' : 'border-red-300 text-red-700'}`}>
       {desactivado ? 'Reactivar invernadero' : 'Desactivar invernadero'}

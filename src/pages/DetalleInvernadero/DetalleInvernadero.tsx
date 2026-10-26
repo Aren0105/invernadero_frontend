@@ -1,5 +1,5 @@
 import { opcionesNavegacion } from '../../config/navegacion'
-import { ArrowLeft, ArrowRight, Droplets, Waves, Pencil } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Droplets, Waves, Pencil, Thermometer } from 'lucide-react'
 import Boton from '../../components/ui/Boton'
 import NavegacionPrincipal from '../../components/NavegacionPrincipal'
 import Tarjeta from '../../components/ui/Tarjeta'
@@ -44,7 +44,7 @@ export default function DetalleInvernadero({ id, onVolver, onPerfil, onMedicione
         {cargando && <Texto role="status">Cargando invernadero…</Texto>}
         {error && <div><Texto role="alert" className="text-sm text-red-700">{error}</Texto><Boton type="button" onClick={recargar} className="mt-3 min-h-11 rounded-xl border px-4">Reintentar</Boton></div>}
         {datos && <>
-        {recienCreado && <Tarjeta variante="aviso"><Texto role="status">Invernadero creado. Puedes configurar su equipo ahora o más adelante.</Texto></Tarjeta>}
+        {recienCreado && <Tarjeta variante="aviso"><Texto role="status">Invernadero creado. Puedes configurar su controlador ahora o más adelante.</Texto></Tarjeta>}
         {invernadero?.rol === 'ADMIN' && <SeccionEquipo equipo={datos.equipo} error={datos.errorEquipo} onConfigurar={onConfigurar} />}
         <section aria-labelledby="estado-actual">
           <Titulo nivel={2} id="estado-actual" variante="seccion">ESTADO ACTUAL</Titulo>
@@ -58,6 +58,11 @@ export default function DetalleInvernadero({ id, onVolver, onPerfil, onMedicione
               <Droplets className="mb-3 h-5 w-5 text-[#2B7E9B]" aria-hidden="true" />
               <Texto className="text-2xl font-semibold">— <span className="text-base font-normal">%</span></Texto>
               <Titulo nivel={3} className="mt-1 text-sm text-[#64766A]">Humedad ambiental</Titulo>
+            </Tarjeta>
+            <Tarjeta como="article">
+              <Thermometer className="mb-3 h-5 w-5 text-[#2B7E9B]" aria-hidden="true" />
+              <Texto className="text-2xl font-semibold">— <span className="text-base font-normal">°C</span></Texto>
+              <Titulo nivel={3} className="mt-1 text-sm text-[#64766A]">Temperatura</Titulo>
             </Tarjeta>
           </div>
           <Tarjeta como="article" variante="normal" className="mt-3">

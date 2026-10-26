@@ -1,4 +1,4 @@
-export const tiposSensor = ['HumedadAmbiental', 'HumedadSuelo', 'NivelAgua'] as const
+export const tiposSensor = ['Temperatura', 'HumedadSuelo', 'NivelAgua', 'HumedadAmbiental'] as const
 export type TipoSensor = typeof tiposSensor[number]
 export type ConexionEquipo = 'Conectado' | 'Desconectado'
 export type Controlador = {
@@ -11,7 +11,7 @@ export type CredencialEquipo = { id: string; controladorId: string; creadaEn: st
 export type CredencialEmitida = CredencialEquipo & { secreto: string }
 
 export const nombresSensor: Record<TipoSensor, string> = {
-  HumedadAmbiental: 'Humedad ambiental', HumedadSuelo: 'Humedad del suelo', NivelAgua: 'Nivel de agua',
+  Temperatura: 'Temperatura', HumedadAmbiental: 'Humedad ambiental', HumedadSuelo: 'Humedad del suelo', NivelAgua: 'Nivel de agua',
 }
 
 /** Calcula la vigencia visual; el servidor vuelve a verificarla al activar o recibir mediciones. */
@@ -23,3 +23,8 @@ export function credencialVigente(credencial: CredencialEquipo, ahora: number): 
 export function fechaEquipo(fecha: string | null): string {
   return fecha ? new Date(fecha).toLocaleString('es-PE') : 'Sin registro'
 }
+
+/** Los cuatro tipos admitidos pueden registrarse por separado, una vez por controlador. */
+export const tiposSensorRegistrables: readonly TipoSensor[] = tiposSensor
+/** Unidades fijas por magnitud; no convierte valores históricos ni lecturas del firmware. */
+export const unidadesSensor: Record<TipoSensor, string> = { Temperatura: '°C', HumedadSuelo: '%', NivelAgua: '%', HumedadAmbiental: '%' }

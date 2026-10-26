@@ -19,7 +19,7 @@ export default function SesionEnVivo({ invernaderoId, sensor }: { invernaderoId:
   const enCurso = ['conectando', 'solicitando', 'activo'].includes(estado.fase)
   const ultima = estado.lecturas.at(-1)
   const Icono = sensor.tipo === 'NivelAgua' ? Waves : Droplets
-  const fases = { listo: 'Listo para iniciar', conectando: 'Conectando', solicitando: 'Esperando al equipo', activo: 'Activo', detenido: 'Detenido', desconectado: 'Desconectado', error: 'No disponible' }
+  const fases = { listo: 'Listo para iniciar', conectando: 'Conectando', solicitando: 'Esperando al controlador', activo: 'Activo', detenido: 'Detenido', desconectado: 'Desconectado', error: 'No disponible' }
   const antiguedad = estado.recibidaEn ? Math.max(0, Math.floor((ahora - Date.parse(estado.recibidaEn)) / 1000)) : null
   return <div className="space-y-5">
     <div><Titulo nivel={2} className="text-xl font-semibold">{nombresSensor[sensor.tipo]}</Titulo><Texto className="mt-1 text-sm text-[#738077]">Sensor #{sensor.id} · Unidad: {sensor.unidad}</Texto></div>
@@ -30,7 +30,7 @@ export default function SesionEnVivo({ invernaderoId, sensor }: { invernaderoId:
       <Seleccion id="intervalo-monitoreo" value={intervalo} disabled={enCurso} onChange={(evento) => setIntervalo(Number(evento.target.value))}>
         {[1000, 2000, 5000, 10000].map((ms) => <option key={ms} value={ms}>Cada {ms / 1000} {ms === 1000 ? 'segundo' : 'segundos'}</option>)}
       </Seleccion>
-      <Texto className="mt-2 text-xs text-[#738077]">El equipo puede confirmar una frecuencia más lenta según su sensor.</Texto>
+      <Texto className="mt-2 text-xs text-[#738077]">El controlador puede confirmar una frecuencia más lenta según su sensor.</Texto>
     </div>
     <div className="flex gap-3">
       <Boton type="button" variante="verde" disabled={enCurso} className="disabled:opacity-50" onClick={() => { void iniciar(intervalo) }}>Iniciar monitoreo</Boton>

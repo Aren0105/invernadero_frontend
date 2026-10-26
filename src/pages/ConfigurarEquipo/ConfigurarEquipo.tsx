@@ -33,11 +33,11 @@ export default function ConfigurarEquipo({ id, onVolver }: Props) {
       <Boton type="button" disabled={ocupado} onClick={onVolver} className="mb-1 inline-flex min-h-11 items-center gap-2 rounded-lg pr-3 text-sm focus-visible:outline-2 focus-visible:outline-[#47885C]">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />Volver al invernadero
       </Boton>
-      <Titulo className="text-2xl font-bold tracking-tight">Configurar equipo</Titulo>
+      <Titulo className="text-2xl font-bold tracking-tight">Configurar controlador</Titulo>
       {datos && <Texto className="mt-2 break-words text-sm text-[#64766A]">{datos.invernadero.nombre}</Texto>}
     </header>
     <div className="mb-5 space-y-3">
-      {cargando && <Texto role="status" className="text-sm">Actualizando equipo…</Texto>}
+      {cargando && <Texto role="status" className="text-sm">Actualizando controlador…</Texto>}
       {ocupado && <Texto role="status" className="text-sm">Guardando cambios…</Texto>}
       {(flujo.error || flujo.errorOperacion) && <Texto role="alert" className="text-sm text-red-700">{flujo.error || flujo.errorOperacion}</Texto>}
       {flujo.aviso && <Texto role="status" className="text-sm text-[#2F704B]">{flujo.aviso}</Texto>}
@@ -46,7 +46,7 @@ export default function ConfigurarEquipo({ id, onVolver }: Props) {
         <RefreshCw className="h-4 w-4" aria-hidden="true" />Actualizar datos
       </Boton>}
     </div>
-    {datos?.invernadero.rol === 'OPERATOR' ? <Tarjeta><Texto role="status" className="text-sm">Solo un administrador de este invernadero puede configurar el equipo.</Texto></Tarjeta> : datos && <div className="space-y-5">
+    {datos?.invernadero.rol === 'OPERATOR' ? <Tarjeta><Texto role="status" className="text-sm">Solo un administrador de este invernadero puede configurar el controlador.</Texto></Tarjeta> : datos && <div className="space-y-5">
       {datos.invernadero.estado === 'Desactivado' && <Tarjeta variante="aviso"><Texto role="status">El invernadero está desactivado. Reactívalo desde Editar datos y estado antes de registrar o habilitar su ESP32.</Texto></Tarjeta>}
       <Tarjeta como="section" className="space-y-4">
         <Titulo nivel={2} variante="seccion">1. CONTROLADOR ESP32</Titulo>
@@ -56,8 +56,10 @@ export default function ConfigurarEquipo({ id, onVolver }: Props) {
         </div> : <FormularioControlador deshabilitado={bloqueado || datos.invernadero.estado === 'Desactivado'} onRegistrar={(nombre) => flujo.ejecutar(() => servicioEquipos.registrar(id, nombre), 'ESP32 registrado. Continúa con sus sensores.')} />}
       </Tarjeta>
       {controlador && <>
-        <Tarjeta><PanelSensores sensores={datos.sensores} deshabilitado={bloqueado}
-          onAgregar={(tipo, unidad) => flujo.ejecutar(() => servicioEquipos.agregarSensor(controlador.id, tipo, unidad), 'Sensor registrado. Configura su identificador en la placa.')} /></Tarjeta>
+        <Tarjeta><PanelSensores sensores={datos.sensores} deshabilitado={bloqueado} controladorActivo={controlador.activo}
+          onAgregar={(tipo) => flujo.ejecutar(() => servicioEquipos.agregarSensor(controlador.id, tipo), 'Sensor registrado. Configura su identificador en la placa.')}
+          onEditar={(sensorId, tipo) => flujo.ejecutar(() => servicioEquipos.editarSensor(controlador.id, sensorId, tipo), 'Sensor actualizado. Revisa su tipo y unidad en el firmware antes de habilitar el controlador.')}
+          onEliminar={(sensorId) => flujo.ejecutar(() => servicioEquipos.eliminarSensor(controlador.id, sensorId), 'Sensor eliminado. Retira su identificador de la configuración de la placa.')} /></Tarjeta>
         <Tarjeta><PanelCredenciales key={controlador.id} credenciales={datos.credenciales} secreto={secreto} deshabilitado={bloqueado} ahora={ahora}
           onEmitir={(venceEn, reemplazar) => flujo.ejecutar(() => servicioEquipos.emitir(controlador.id, venceEn, reemplazar), 'Credencial emitida. Guárdala antes de continuar.', flujo.setSecreto)}
           onRevocar={(credencialId) => flujo.ejecutar(() => servicioEquipos.revocar(controlador.id, credencialId), 'Credencial revocada.')}

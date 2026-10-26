@@ -242,4 +242,12 @@ test('Monitoreo: ciclo de vida, renovación, desconexiones y lecturas tardías',
     assert.throws(() => direccionMonitoreo('https://usuario:clave@api.example.test'))
     assert.throws(() => direccionMonitoreo('https://api.example.test?token=secreto'))
   })
+  await t.test('valida temperaturas negativas en el canal sin admitir porcentajes negativos', async () => {
+    const { leerLecturaViva } = await vite.ssrLoadModule('/src/types/monitoreo.ts')
+    const temperatura = { ...sensor, tipo: 'Temperatura', unidad: '°C' }
+    const lectura = { sensorId: '9', controllerId: '7', greenhouseId: '3', type: 'Temperatura', unit: '°C', requestId: request, sequence: 1, readingId: 'lectura:1', value: -5, measuredAt: null, receivedAt: '2026-10-26T15:00:00Z' }
+    assert.equal(leerLecturaViva(lectura, '3', temperatura).value, -5)
+    assert.throws(() => leerLecturaViva({ ...lectura, type: 'HumedadSuelo', unit: '%' }, '3', sensor))
+  })
+
 })

@@ -34,7 +34,7 @@ export function leerLecturaViva(valor: unknown, invernaderoId: string, sensor: S
     || typeof dato.requestId !== 'string' || !/^[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i.test(dato.requestId)
     || !Number.isInteger(dato.sequence) || Number(dato.sequence) < 0 || Number(dato.sequence) > 2147483647
     || typeof dato.readingId !== 'string' || !/^[a-z\d][a-z\d_:-]{0,99}$/i.test(dato.readingId)
-    || typeof dato.value !== 'number' || !Number.isFinite(dato.value) || dato.value < 0 || dato.value > 99999.99
+    || typeof dato.value !== 'number' || !Number.isFinite(dato.value) || dato.value < (sensor.tipo === 'Temperatura' ? -273.15 : 0) || dato.value > 99999.99
     || ((sensor.unidad === '%' || sensor.tipo.startsWith('Humedad')) && dato.value > 100)
     || !fecha(dato.receivedAt) || (dato.measuredAt !== null && !fecha(dato.measuredAt))) throw new Error('La lectura no corresponde al sensor o contiene datos inválidos.')
   return { requestId: dato.requestId, sequence: Number(dato.sequence), readingId: dato.readingId, value: dato.value, measuredAt: dato.measuredAt as string | null, receivedAt: dato.receivedAt }

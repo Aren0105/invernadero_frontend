@@ -22,7 +22,7 @@ export default function PanelEstadoControlador({ controlador, invernaderoDesacti
       {controlador.activo ? 'Bloquear comunicaciones del ESP32' : 'Habilitar ESP32'}
     </Boton>
     {confirmar && <div className="space-y-3 rounded-xl bg-[#E8F3EC] p-4 text-sm">
-      <Texto>{controlador.activo ? 'Se impedirán las comunicaciones del equipo. Se conservarán sus sensores, historial y credenciales; podrás habilitarlo después.' : 'El equipo podrá comunicarse con sus credenciales vigentes. Comprueba que ya configuraste la placa con sus sensores y su clave.'}</Texto>
+      <Texto>{controlador.activo ? 'Se impedirán las comunicaciones del controlador. Se conservarán sus sensores, historial y credenciales; podrás habilitarlo después.' : 'El controlador podrá comunicarse con sus credenciales vigentes. Comprueba que ya configuraste la placa con sus sensores y su clave.'}</Texto>
       <div className="flex gap-3">
         <Boton type="button" disabled={deshabilitado} onClick={() => setConfirmar(false)} className="min-h-11 flex-1 rounded-xl border px-3">Cancelar</Boton>
         <Boton type="button" disabled={deshabilitado || (!controlador.activo && (!tieneCredencial || invernaderoDesactivado))} className="min-h-11 flex-1 rounded-xl bg-[#2F704B] px-3 text-white disabled:opacity-60"

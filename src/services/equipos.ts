@@ -2,7 +2,13 @@ import isLength from 'validator/lib/isLength'
 import { peticionApi } from './api'
 import { cuerpoJson, objeto, solicitarApi, type TransporteApi } from './contratoApi'
 import { esIdInvernadero } from '../types/invernaderos'
-import { tiposSensor, type Controlador, type CredencialEmitida, type CredencialEquipo, type Sensor, type TipoSensor, type ConexionEquipo } from '../types/equipos'
+import { unidadesSensor, tiposSensor, type Controlador, type CredencialEmitida, type CredencialEquipo, type Sensor, type TipoSensor, type ConexionEquipo } from '../types/equipos'
+
+const erroresSensor = [
+  'Bloquea las comunicaciones del controlador antes de editar o eliminar sensores.',
+  'El sensor tiene mediciones. No se puede eliminar ni cambiar su tipo o unidad para conservar el historial.',
+  'El controlador ya tiene un sensor de ese tipo.',
+] as const
 
 function id(valor: unknown): string {
   if (!esIdInvernadero(valor)) throw new Error('El identificador del recurso no es válido.')
@@ -91,7 +97,7 @@ export function crearServicioEquipos(enviar: TransporteApi) {
 
   async function sensores(controladorId: string, signal?: AbortSignal): Promise<Sensor[]> {
     return solicitarApi(enviar, `/controllers/${id(controladorId)}/sensors`, { signal }, (valor) => {
-      if (!Array.isArray(valor) || valor.length > 3) throw new Error('La lista de sensores no es válida.')
+      if (!Array.isArray(valor) || valor.length > tiposSensor.length) throw new Error('La lista de sensores no es válida.')
       const datos = valor.map(leerSensor)
       if (datos.some((dato) => dato.controladorId !== controladorId) || new Set(datos.map(({ tipo }) => tipo)).size !== datos.length
         || new Set(datos.map(({ id: sensorId }) => sensorId)).size !== datos.length) throw new Error('Los sensores del equipo no son válidos.')
@@ -99,13 +105,28 @@ export function crearServicioEquipos(enviar: TransporteApi) {
     })
   }
 
-  function agregarSensor(controladorId: string, tipo: TipoSensor, unidad: string): Promise<Sensor> {
-    if (!tiposSensor.includes(tipo) || !isLength(unidad.trim(), { min: 1, max: 10 })) throw new Error('Revisa el tipo de sensor y su unidad (de 1 a 10 caracteres).')
+  function agregarSensor(controladorId: string, tipo: TipoSensor, unidad = unidadesSensor[tipo]): Promise<Sensor> {
+    if (!tiposSensor.includes(tipo) || unidad.trim() !== unidadesSensor[tipo]) throw new Error('Revisa el tipo de sensor y su unidad fija.')
     return solicitarApi(enviar, `/controllers/${id(controladorId)}/sensors`, cuerpoJson('POST', { type: tipo, unit: unidad.trim() }), (valor) => {
       const sensor = leerSensor(valor)
-      if (sensor.controladorId !== controladorId || sensor.tipo !== tipo) throw new Error('El sensor recibido no corresponde a la solicitud.')
+      if (sensor.controladorId !== controladorId || sensor.tipo !== tipo || sensor.unidad !== unidadesSensor[tipo]) throw new Error('El sensor recibido no corresponde a la solicitud.')
       return sensor
     })
+  }
+
+  /** Corrige un sensor sin historial; el servidor comprueba pertenencia y bloqueo del controlador. */
+  function editarSensor(controladorId: string, sensorId: string, tipo: TipoSensor): Promise<Sensor> {
+    if (!tiposSensor.includes(tipo)) throw new Error('El tipo de sensor no es válido.')
+    return solicitarApi(enviar, `/controllers/${id(controladorId)}/sensors/${id(sensorId)}`, cuerpoJson('PATCH', { type: tipo, unit: unidadesSensor[tipo] }), (valor) => {
+      const sensor = leerSensor(valor)
+      if (sensor.id !== sensorId || sensor.controladorId !== controladorId || sensor.tipo !== tipo || sensor.unidad.trim() !== unidadesSensor[tipo]) throw new Error('El sensor recibido no corresponde a la edición.')
+      return sensor
+    }, erroresSensor)
+  }
+
+  /** Elimina únicamente sensores sin mediciones; no reintenta automáticamente la operación. */
+  async function eliminarSensor(controladorId: string, sensorId: string): Promise<void> {
+    await solicitarApi(enviar, `/controllers/${id(controladorId)}/sensors/${id(sensorId)}`, { method: 'DELETE' }, () => undefined, erroresSensor)
   }
 
   function credenciales(controladorId: string, signal?: AbortSignal): Promise<CredencialEquipo[]> {
@@ -134,7 +155,7 @@ export function crearServicioEquipos(enviar: TransporteApi) {
     })
   }
 
-  return { consultar, registrar, sensores, agregarSensor, credenciales, emitir, revocar, activar }
+  return { consultar, registrar, sensores, agregarSensor, editarSensor, eliminarSensor, credenciales, emitir, revocar, activar }
 }
 
 export const servicioEquipos = crearServicioEquipos(peticionApi)

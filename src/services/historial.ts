@@ -21,14 +21,14 @@ function instante(valor: unknown): string {
 }
 
 function numero(valor: unknown): number {
-  if (typeof valor !== 'number' || !Number.isFinite(valor) || valor < 0) throw new Error('El valor de medición no es válido.')
+  if (typeof valor !== 'number' || !Number.isFinite(valor) || valor < -273.15) throw new Error('El valor de medición no es válido.')
   return valor
 }
 
 /** Proyecta el inventario público y verifica que todos sus sensores pertenezcan al equipo del invernadero solicitado. */
 function leerInventario(valor: unknown, invernaderoId: string): InventarioSensores {
   const dato = objeto(valor)
-  if (dato.greenhouseId !== invernaderoId || !Array.isArray(dato.items) || dato.items.length > 3) throw new Error('El inventario no corresponde al invernadero.')
+  if (dato.greenhouseId !== invernaderoId || !Array.isArray(dato.items) || dato.items.length > tiposSensor.length) throw new Error('El inventario no corresponde al invernadero.')
   const controladorId = dato.controllerId === null ? null : id(dato.controllerId)
   const sensores = dato.items.map((item): Sensor => {
     const sensor = objeto(item)
@@ -53,6 +53,11 @@ export function validarConsultaHistorial(consulta: ConsultaHistorial): void {
 
 /** Adapta una página sin deduplicar por fecha ni confundir grupos horarios con mediciones individuales. */
 function leerPagina(valor: unknown, sensor: Sensor, consulta: ConsultaHistorial): PaginaHistorial {
+  const valorSensor = (valor: unknown): number => {
+    const dato = numero(valor)
+    if ((sensor.tipo !== 'Temperatura' && dato < 0) || ((sensor.unidad === '%' || sensor.tipo.startsWith('Humedad')) && dato > 100)) throw new Error('El valor no corresponde a la magnitud del sensor.')
+    return dato
+  }
   const dato = objeto(valor)
   const recibido = objeto(dato.sensor)
   const rango = objeto(dato.range)
@@ -65,9 +70,9 @@ function leerPagina(valor: unknown, sensor: Sensor, consulta: ConsultaHistorial)
   const cantidad = conteo(resumen.count)
   const total = conteo(paginacion.total)
   const vacio = cantidad === '0'
-  const minimo = vacio && resumen.minimum === null ? null : numero(resumen.minimum)
-  const maximo = vacio && resumen.maximum === null ? null : numero(resumen.maximum)
-  const promedio = vacio && resumen.average === null ? null : numero(resumen.average)
+  const minimo = vacio && resumen.minimum === null ? null : valorSensor(resumen.minimum)
+  const maximo = vacio && resumen.maximum === null ? null : valorSensor(resumen.maximum)
+  const promedio = vacio && resumen.average === null ? null : valorSensor(resumen.average)
   if ((vacio && (minimo !== null || maximo !== null || promedio !== null)) || (!vacio && (minimo == null || maximo == null || promedio == null || minimo > promedio || promedio > maximo))
     || (consulta.agrupacion === 'none' && total !== cantidad) || BigInt(total) > BigInt(cantidad)
     || paginacion.hasNext !== (BigInt(consulta.pagina) * BigInt(consulta.limite) < BigInt(total))) throw new Error('Los resúmenes o la paginación no son válidos.')
@@ -80,12 +85,12 @@ function leerPagina(valor: unknown, sensor: Sensor, consulta: ConsultaHistorial)
     const inicioPermitido = agrupado ? Math.floor(Date.parse(consulta.rango.desde) / 3600000) * 3600000 : Date.parse(consulta.rango.desde)
     if (tiempo < inicioPermitido || tiempo >= Date.parse(consulta.rango.hasta) || tiempo < anterior || (agrupado && (tiempo <= anterior || tiempo % 3600000 !== 0))) throw new Error('La secuencia de fechas del historial no es válida.')
     anterior = tiempo
-    const valor = numero(agrupado ? fila.average : fila.value)
+    const valor = valorSensor(agrupado ? fila.average : fila.value)
     if (sensor.unidad === '%' && valor > 100) throw new Error('El valor porcentual no es válido.')
     if (agrupado) {
       const conteoGrupo = conteo(fila.count)
-      const minimoGrupo = numero(fila.minimum)
-      const maximoGrupo = numero(fila.maximum)
+      const minimoGrupo = valorSensor(fila.minimum)
+      const maximoGrupo = valorSensor(fila.maximum)
       if (conteoGrupo === '0' || BigInt(conteoGrupo) > BigInt(cantidad) || minimoGrupo > valor || valor > maximoGrupo) throw new Error('El grupo horario no es válido.')
       return { id: `hora:${fechaHora}`, fechaHora, valor, conteo: conteoGrupo, minimo: minimoGrupo, maximo: maximoGrupo }
     }
