@@ -1,6 +1,5 @@
 import { opcionesNavegacion } from '../../config/navegacion'
-import { useRef } from 'react'
-import { ArrowLeft, ArrowRight, Droplets, Waves, Trash2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Droplets, Waves, Pencil } from 'lucide-react'
 import Boton from '../../components/ui/Boton'
 import NavegacionPrincipal from '../../components/NavegacionPrincipal'
 import Tarjeta from '../../components/ui/Tarjeta'
@@ -15,14 +14,14 @@ type DetalleInvernaderoProps = {
   onPerfil: () => void
   onMediciones: () => void
   onConfigurar: () => void
+  onEditar: () => void
   recienCreado?: boolean
   onControlRiego?: () => void
   onHistorialRiego?: () => void
 }
 
 /** Consulta el registro real y permite retomar el equipo; las mediciones y el riego conservan sus integraciones independientes. */
-export default function DetalleInvernadero({ id, onVolver, onPerfil, onMediciones, onConfigurar, recienCreado, onControlRiego, onHistorialRiego }: DetalleInvernaderoProps) {
-  const dialogo = useRef<HTMLDialogElement>(null)
+export default function DetalleInvernadero({ id, onVolver, onPerfil, onMediciones, onConfigurar, onEditar, recienCreado, onControlRiego, onHistorialRiego }: DetalleInvernaderoProps) {
   const { datos, error, cargando, recargar } = useDetalleInvernadero(id)
   const invernadero = datos?.invernadero
   const area = invernadero?.largo && invernadero.ancho ? Number(invernadero.largo) * Number(invernadero.ancho) : null
@@ -101,24 +100,16 @@ export default function DetalleInvernadero({ id, onVolver, onPerfil, onMedicione
             <div className="flex justify-between gap-4"><dt className="text-[#64766A]">Área</dt><dd>{area != null && Number.isFinite(area) ? area.toLocaleString('es-PE', { maximumFractionDigits: 2 }) : '—'} m²</dd></div>
           </Tarjeta>
         </section>
-        <Boton
+        {invernadero?.rol === 'ADMIN' && <Boton
           type="button"
-          onClick={() => dialogo.current?.showModal()} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
+          onClick={onEditar} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[#91A595] bg-white px-4 py-3 text-sm font-semibold text-[#2F704B] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#47885C]"
         >
-          <Trash2 className="h-5 w-5" aria-hidden="true" />
-          Eliminar invernadero
-        </Boton>
+          <Pencil className="h-5 w-5" aria-hidden="true" />
+          Editar datos y estado
+        </Boton>}
         </>}
       </main>
 
-      <dialog ref={dialogo} aria-labelledby="titulo-eliminar" aria-describedby="descripcion-eliminar" className="fixed inset-0 m-auto w-[calc(100%-2rem)] max-w-sm rounded-2xl bg-white p-6 text-[#233D32] shadow-xl backdrop:bg-black/50">
-        <Titulo nivel={2} id="titulo-eliminar" className="text-xl font-semibold">¿Eliminar invernadero?</Titulo>
-        <Texto id="descripcion-eliminar" className="mt-3 text-sm text-[#64766A]">La eliminación todavía no está disponible. No se borrarán datos.</Texto>
-        <form method="dialog" className="mt-6 flex gap-3">
-          <Boton autoFocus className="min-h-11 flex-1 rounded-xl border border-[#D3DBD5] px-3">Cancelar</Boton>
-          <Boton type="button" disabled className="min-h-11 flex-1 rounded-xl bg-red-100 px-3 text-red-700 opacity-60">Eliminar</Boton>
-        </form>
-      </dialog>
       <NavegacionPrincipal activa="inicio" opciones={opcionesNavegacion.map((opcion) => ({
         ...opcion,
         onClick: opcion.id === 'inicio' ? onVolver : opcion.id === 'perfil' ? onPerfil : undefined,

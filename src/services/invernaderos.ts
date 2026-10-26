@@ -1,7 +1,7 @@
 import { peticionApi } from './api'
-import { esIdInvernadero, type Invernadero } from '../types/invernaderos'
+import { esIdInvernadero, nombresEstado, type EstadoInvernadero, type Invernadero } from '../types/invernaderos'
 import { cuerpoJson, solicitarApi } from './contratoApi'
-import type { DatosCrearInvernadero } from '../utils/invernaderos'
+import type { DatosCrearInvernadero, DatosActualizarInvernadero } from '../utils/invernaderos'
 
 type Transporte = (ruta: string, opciones?: RequestInit) => Promise<Response>
 
@@ -28,6 +28,26 @@ function leerInvernadero(valor: unknown): Invernadero {
 
 /** Separa el contrato HTTP de las páginas y permite sustituir el transporte en las pruebas. */
 export function crearServicioInvernaderos(enviar: Transporte) {
+  /** Edita solo los datos generales; los campos desconocidos del consumidor no pasan al cuerpo HTTP. */
+  function actualizar(id: string, datos: DatosActualizarInvernadero): Promise<Invernadero> {
+    if (!esIdInvernadero(id)) throw new Error('El identificador del invernadero no es válido.')
+    const { name, location, length, width, height, description } = datos
+    return solicitarApi(enviar, `/greenhouses/${id}`, cuerpoJson('PATCH', { name, location, length, width, height, description }), (valor) => {
+      const actualizado = leerInvernadero(valor)
+      if (actualizado.id !== id) throw new Error('El servidor devolvió otro invernadero.')
+      return actualizado
+    })
+  }
+
+  /** Cambia el estado por una acción independiente; desactivar conserva datos y bloquea las comunicaciones del ESP32. */
+  function cambiarEstado(id: string, estado: EstadoInvernadero): Promise<Invernadero> {
+    if (!esIdInvernadero(id) || !Object.hasOwn(nombresEstado, estado)) throw new Error('El invernadero o su estado no son válidos.')
+    return solicitarApi(enviar, `/greenhouses/${id}/status`, cuerpoJson('PATCH', { status: estado }), (valor) => {
+      const actualizado = leerInvernadero(valor)
+      if (actualizado.id !== id || actualizado.estado !== estado) throw new Error('El servidor no confirmó el estado solicitado.')
+      return actualizado
+    })
+  }
   /** Crea únicamente el invernadero; no reintenta ante pérdidas de conexión para evitar altas duplicadas. */
   function crear(datos: DatosCrearInvernadero): Promise<Invernadero> {
     const { name, location, length, width, height, description } = datos
@@ -81,7 +101,7 @@ export function crearServicioInvernaderos(enviar: Transporte) {
     return registros
   }
 
-  return { listar, consultar, crear }
+  return { listar, consultar, crear, actualizar, cambiarEstado }
 }
 
 export const servicioInvernaderos = crearServicioInvernaderos(peticionApi)

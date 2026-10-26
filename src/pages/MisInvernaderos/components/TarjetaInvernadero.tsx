@@ -29,9 +29,9 @@ export default function TarjetaInvernadero({ invernadero, onAbrir, onEditar }: P
         </span>
       </div>
     </div>
-    <Boton type="button" onClick={() => onEditar(invernadero.id)} aria-label={`Editar ${invernadero.nombre}`}
+    {invernadero.rol === 'ADMIN' && <Boton type="button" onClick={() => onEditar(invernadero.id)} aria-label={`Editar ${invernadero.nombre}`}
       className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[#47885C] hover:bg-[#E8F3EC] focus-visible:outline-2 focus-visible:outline-[#47885C]">
       <Pencil className="h-5 w-5" aria-hidden="true" />
-    </Boton>
+    </Boton>}
   </Tarjeta>
 }

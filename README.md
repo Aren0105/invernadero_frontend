@@ -56,7 +56,7 @@ Se utiliza una instancia de `createBrowserRouter` creada fuera del renderizado d
 | `/perfil` | Perfil y cierre de sesión | Sesión vigente |
 | `/invernaderos` | Mis invernaderos | Sesión vigente |
 | `/invernaderos/nuevo` | Registrar invernadero | Sesión vigente |
-| `/invernaderos/:invernaderoId/editar` | Consulta de datos para edición | Sesión vigente; guardado pendiente del backend |
+| `/invernaderos/:invernaderoId/editar` | Edición y desactivación/reactivación | ADMIN; OPERATOR solo puede consultar |
 | `/invernaderos/:invernaderoId` | Detalle | Sesión vigente |
 | `/invernaderos/:invernaderoId/equipo` | Configurar equipo | ADMIN de ese invernadero |
 | `/invernaderos/:invernaderoId/mediciones` | Mediciones | Sesión vigente |
@@ -141,13 +141,21 @@ Cada tarjeta muestra nombre, descripción y estado. La descripción procede de `
 
 La búsqueda se aplica por nombre al enviar con Enter o con la lupa, sin distinguir mayúsculas ni tildes. Al borrar el campo se restauran todos los registros. Se muestran **No hay invernaderos registrados** para una cuenta sin registros y **No se encontraron invernaderos** cuando un nombre no coincide. El resumen cuenta todas las pertenencias, incluidos los invernaderos en mantenimiento o desactivados.
 
-La tarjeta abre el detalle del identificador seleccionado. El lápiz abre `/invernaderos/:invernaderoId/editar` mediante un botón independiente. La lista se vuelve a consultar al entrar, al recuperar el foco o la visibilidad y al recuperar conexión; las consultas se cancelan al salir. Volver desde registro o edición provoca una nueva consulta, sin depender de una lista almacenada en memoria.
+La tarjeta abre el detalle del identificador seleccionado. El lápiz, visible para ADMIN, abre `/invernaderos/:invernaderoId/editar` mediante un botón independiente. La lista se vuelve a consultar al entrar, al recuperar el foco o la visibilidad y al recuperar conexión; las consultas se cancelan al salir. Volver desde registro o edición provoca una nueva consulta, sin depender de una lista almacenada en memoria. Los invernaderos desactivados se conservan en la lista y pueden reactivarse.
 
-### Límites del servidor actual
+### Edición y estado del invernadero
 
-El contrato revisado permite listar, consultar y crear con descripción, pero no tiene rutas para editar o desactivar un invernadero. La pantalla de edición consulta los datos actuales e informa que el guardado aún no está disponible. No se envían PATCH/DELETE a endpoints inexistentes ni se simulan cambios locales. Bloquear las comunicaciones de un controlador es una operación distinta de desactivar el invernadero.
+El servidor incluye `PATCH /greenhouses/:id` para editar datos generales y `PATCH /greenhouses/:id/status` para cambiar el estado. Ambas rutas exigen ADMIN del recurso, comprobado en PostgreSQL dentro de la transacción. Los cambios utilizan las columnas existentes, sin migraciones. No existe borrado físico por estas rutas.
 
-`npm run test:invernaderos` utiliza respuestas HTTP simuladas para comprobar páginas sucesivas, búsqueda por nombre, bigint, cancelación, errores y rechazo de contratos inválidos. No modifica cuentas ni la base de datos y no reemplaza una comprobación de navegación en el navegador con el backend desplegado.
+La edición precarga nombre, ubicación, largo, ancho, alto y descripción. Comparte `components/invernaderos/FormularioInvernadero` y la validación con RegistrarInvernadero. `useEditarInvernadero` coordina las escrituras y `components/EstadoInvernadero` confirma el cambio de estado. Un OPERATOR que abra la URL ve el formulario deshabilitado; el servidor también rechaza las escrituras con 403.
+
+La actualización parcial admite los mismos límites que la creación; omitir campos los conserva. Para borrar alto o descripción se envía null. El formulario envía sus datos generales completos, incluidos los opcionales nulos cuando se vacían, pero no manda estado, equipo, rol ni propietario. Guardar datos no reactiva un invernadero desactivado. Las ediciones concurrentes se serializan en el servidor; si varias personas editan el mismo campo, prevalece la última escritura, sin detección de versiones en la interfaz.
+
+Desactivar exige confirmación y conserva registros, pertenencias, credenciales e historial. En la misma transacción bloquea las comunicaciones del ESP32 y marca sus sensores Desconectado. No equivale a enviar una orden física a una bomba o un relé. Reactivar pasa el registro a Activo, pero el ESP32 permanece bloqueado hasta habilitarlo expresamente desde Configurar equipo. Se impide registrar o habilitar equipos mientras el invernadero esté Desactivado. EnMantenimiento sigue siendo un estado válido en la API y conserva las comunicaciones autorizadas.
+
+Cambiar el estado no guarda los cambios pendientes del formulario; el diálogo lo advierte y esos valores se conservan. Tras guardar se muestra la confirmación y los valores devueltos por el servidor. Los controles se bloquean durante cada escritura para impedir envíos dobles. Ante una respuesta incierta, otro recurso/estado en la respuesta o permisos revocados, se ofrece consultar de nuevo antes de escribir. Revisar datos guardados descarta los valores locales y vuelve a cargar el registro. Al salir con cambios sin guardar se pide confirmación mediante ProteccionSalida.
+
+`npm run test:invernaderos` utiliza respuestas HTTP simuladas para comprobar páginas sucesivas, búsqueda por nombre, bigint, cancelación, edición, limpieza de opcionales, transiciones de estado, errores y rechazo de contratos inválidos. No modifica cuentas ni la base de datos y no reemplaza una comprobación de navegación en el navegador con el backend desplegado. El servidor incorpora pruebas de permisos, DTOs y desactivación transaccional, además de escenarios HTTP preparados para una base PostgreSQL de pruebas explícita.
 
 ## Registro de invernaderos y configuración del equipo
 
@@ -168,7 +176,7 @@ ConfigurarEquipo separa la coordinación en `useConfiguracionEquipo` y la presen
 | Emitir clave | `POST /controllers/:id/credentials` | Vencimiento opcional; muestra el original únicamente durante esa visita. |
 | Reemplazar claves | `POST /controllers/:id/credentials/rotate` | Requiere confirmación porque invalida las anteriores. |
 | Revocar clave | `DELETE /controllers/:id/credentials/:credentialId` | Requiere confirmación y conserva el registro revocado. |
-| Habilitar/bloquear | `PATCH /controllers/:id` | Cambia active; habilitar exige una credencial vigente verificada nuevamente por el servidor. |
+| Habilitar/bloquear | `PATCH /controllers/:id` | Cambia active; habilitar exige una credencial vigente y un invernadero que no esté Desactivado. |
 
 Las fechas opcionales del formulario se interpretan en la zona local y se envían en ISO con zona UTC. La UI distingue credenciales vigentes, vencidas y revocadas. Una clave sin vencimiento puede revocarse. La rotación no se confunde con emitir una clave adicional, que permite una transición sin invalidar inmediatamente la anterior.
 
@@ -190,9 +198,9 @@ El firmware local revisado en `esp32__client/esp32_monitoring/esp32_monitoring.i
 
 - Login y registro de usuario: conectados al servicio HTTP; requieren un backend compatible.
 - Lista de invernaderos: conectada, con contador, búsqueda por nombre, selección, mensajes vacíos y reintento.
-- Edición de invernaderos: navegación y consulta conectadas; guardado y desactivación pendientes de soporte del servidor.
+- Edición de invernaderos: guardado, desactivación y reactivación conectados; exige ADMIN del invernadero.
 - Registro de invernaderos: conectado con validación del DTO y creación separada del equipo.
-- Detalle: datos del invernadero y acceso a configuración de equipo conectados; eliminación y control de riego pendientes.
+- Detalle: datos, acceso a edición y configuración de equipo conectados; control de riego pendiente. Se utiliza desactivación reversible en lugar del botón de eliminación pendiente.
 - Equipo: registro de ESP32, sensores, credenciales, activación y bloqueo conectados a la API existente.
 - Mediciones y tiempo real: componentes preparados para recibir lecturas por propiedades; aún no se suministran datos desde las rutas ni existe una suscripción en tiempo real.
 - Perfil y cierre de sesión: conectados; accesibles desde la navegación inferior. Filtros, notificaciones y configuración: pendientes de implementación.

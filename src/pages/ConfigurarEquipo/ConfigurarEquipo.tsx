@@ -47,12 +47,13 @@ export default function ConfigurarEquipo({ id, onVolver }: Props) {
       </Boton>}
     </div>
     {datos?.invernadero.rol === 'OPERATOR' ? <Tarjeta><Texto role="status" className="text-sm">Solo un administrador de este invernadero puede configurar el equipo.</Texto></Tarjeta> : datos && <div className="space-y-5">
+      {datos.invernadero.estado === 'Desactivado' && <Tarjeta variante="aviso"><Texto role="status">El invernadero está desactivado. Reactívalo desde Editar datos y estado antes de registrar o habilitar su ESP32.</Texto></Tarjeta>}
       <Tarjeta como="section" className="space-y-4">
         <Titulo nivel={2} variante="seccion">1. CONTROLADOR ESP32</Titulo>
         {controlador ? <div className="space-y-2 text-sm">
           <Texto className="break-words font-semibold">{controlador.nombre}</Texto>
           <Texto className="text-[#64766A]">ID: {controlador.id}. Este invernadero admite un único ESP32.</Texto>
-        </div> : <FormularioControlador deshabilitado={bloqueado} onRegistrar={(nombre) => flujo.ejecutar(() => servicioEquipos.registrar(id, nombre), 'ESP32 registrado. Continúa con sus sensores.')} />}
+        </div> : <FormularioControlador deshabilitado={bloqueado || datos.invernadero.estado === 'Desactivado'} onRegistrar={(nombre) => flujo.ejecutar(() => servicioEquipos.registrar(id, nombre), 'ESP32 registrado. Continúa con sus sensores.')} />}
       </Tarjeta>
       {controlador && <>
         <Tarjeta><PanelSensores sensores={datos.sensores} deshabilitado={bloqueado}
@@ -62,7 +63,7 @@ export default function ConfigurarEquipo({ id, onVolver }: Props) {
           onRevocar={(credencialId) => flujo.ejecutar(() => servicioEquipos.revocar(controlador.id, credencialId), 'Credencial revocada.')}
           onCerrarSecreto={() => flujo.setSecreto(null)} /></Tarjeta>
         <Tarjeta><GuiaInstalacion controlador={controlador} sensores={datos.sensores} /></Tarjeta>
-        <Tarjeta><PanelEstadoControlador controlador={controlador} tieneCredencial={datos.credenciales.some((clave) => credencialVigente(clave, ahora))}
+        <Tarjeta><PanelEstadoControlador controlador={controlador} invernaderoDesactivado={datos.invernadero.estado === 'Desactivado'} tieneCredencial={datos.credenciales.some((clave) => credencialVigente(clave, ahora))}
           deshabilitado={bloqueado} onCambiar={(activo) => flujo.ejecutar(() => servicioEquipos.activar(controlador.id, activo), activo ? 'ESP32 habilitado. Comprueba su última comunicación después de conectar la placa.' : 'Comunicaciones del ESP32 bloqueadas.')} /></Tarjeta>
       </>}
     </div>}

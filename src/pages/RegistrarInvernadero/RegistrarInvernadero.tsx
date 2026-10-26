@@ -7,7 +7,7 @@ import { servicioInvernaderos } from '../../services/invernaderos'
 import { ErrorOperacion } from '../../services/contratoApi'
 import { enfocarPrimerError } from '../../utils/validacion'
 import { datosCrearInvernadero, validarInvernadero, type ErroresInvernadero, type FormularioInvernadero } from '../../utils/invernaderos'
-import FormularioRegistro from './components/FormularioRegistro'
+import FormularioRegistro from '../../components/invernaderos/FormularioInvernadero'
 
 type Props = { onVolver: () => void; onRegistrado: (id: string) => void }
 const inicial: FormularioInvernadero = { nombre: '', ubicacion: '', largo: '', ancho: '', alto: '', descripcion: '' }
@@ -65,7 +65,7 @@ export default function RegistrarInvernadero({ onVolver, onRegistrado }: Props) 
       <Boton type="button" variante="verde" onClick={() => onRegistrado(creado)}>Ver invernadero y configurar equipo</Boton>
       <Boton type="button" className="min-h-11 w-full text-sm underline" onClick={onVolver}>Volver a Mis invernaderos</Boton>
     </section> : <>
-      <FormularioRegistro valores={valores} errores={errores} ocupado={ocupado} bloqueado={bloqueado} onEnviar={(evento) => { void enviar(evento) }}
+      <FormularioRegistro etiquetaEnviar="REGISTRAR INVERNADERO" valores={valores} errores={errores} ocupado={ocupado} bloqueado={bloqueado} onEnviar={(evento) => { void enviar(evento) }}
         onCambiar={(campo, valor) => { setValores((actual) => ({ ...actual, [campo]: valor })); setErrores((actual) => ({ ...actual, [campo]: '' })); setError('') }} />
       {error && <Texto role="alert" className="mt-4 text-sm text-red-700">{error}</Texto>}
       {bloqueado && <Boton type="button" variante="verde" className="mt-4" onClick={onVolver}>Revisar Mis invernaderos</Boton>}
