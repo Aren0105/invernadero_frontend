@@ -10,6 +10,7 @@ import RegistrarInvernadero from './pages/RegistrarInvernadero'
 import EditarInvernadero from './pages/EditarInvernadero'
 import ConfigurarEquipo from './pages/ConfigurarEquipo'
 import { esIdInvernadero } from './types/invernaderos'
+import { tiposSensor, type TipoSensor } from './types/equipos'
 import DetalleInvernadero from './pages/DetalleInvernadero'
 import MonitoreoMediciones from './pages/MonitoreoMediciones'
 import MonitoreoTiempoReal from './pages/MonitoreoTiempoReal'
@@ -89,17 +90,19 @@ export function RutaConfigurarEquipo() {
 export function RutaMediciones() {
   const navegar = useNavigate()
   const { invernaderoId } = useParams()
-  const detalle = `/invernaderos/${encodeURIComponent(invernaderoId!)}`
-  return <MonitoreoMediciones onVolver={() => navegar(detalle)} onTiempoReal={(tipo) => navegar(`${detalle}/mediciones/tiempo-real/${tipo}`)} />
+  if (!esIdInvernadero(invernaderoId)) return <NoEncontrada />
+  const detalle = `/invernaderos/${encodeURIComponent(invernaderoId)}`
+  return <MonitoreoMediciones key={invernaderoId} id={invernaderoId} onVolver={() => navegar(detalle)} onTiempoReal={(tipo) => navegar(`${detalle}/mediciones/tiempo-real/${tipo}`)} />
 }
 
 /** Valida el tipo de sensor de la URL antes de mostrar la pantalla de tiempo real. */
 export function RutaTiempoReal() {
   const navegar = useNavigate()
   const { invernaderoId, tipo } = useParams()
-  const mediciones = `/invernaderos/${encodeURIComponent(invernaderoId!)}/mediciones`
-  if (tipo !== 'HumedadSuelo' && tipo !== 'NivelAgua') return <Navigate to={mediciones} replace />
-  return <MonitoreoTiempoReal tipo={tipo} onVolver={() => navegar(mediciones)} />
+  if (!esIdInvernadero(invernaderoId)) return <NoEncontrada />
+  const mediciones = `/invernaderos/${encodeURIComponent(invernaderoId)}/mediciones`
+  if (!tiposSensor.includes(tipo as TipoSensor)) return <Navigate to={mediciones} replace />
+  return <MonitoreoTiempoReal tipo={tipo as TipoSensor} onVolver={() => navegar(mediciones)} />
 }
 
 export function RutaNoEncontrada() { return <NoEncontrada /> }

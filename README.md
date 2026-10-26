@@ -26,6 +26,7 @@ Sin esta variable, los servicios muestran un error de configuración al intentar
 - `npm run test:auth`: verifica el contrato del login con respuestas HTTP simuladas, sin credenciales reales.
 - `npm run test:invernaderos`: comprueba la paginación, búsqueda, identificadores y errores con respuestas simuladas.
 - `npm run test:equipos`: verifica registro de invernadero, sensores, credenciales y activación con transporte simulado.
+- `npm run test:historial`: comprueba rangos de Perú, inventarios, unidades, paginación, grupos horarios y renderizado SVG con respuestas simuladas.
 - `npm run preview`: sirve la compilación para comprobarla localmente.
 
 ## Estructura
@@ -63,7 +64,7 @@ Se utiliza una instancia de `createBrowserRouter` creada fuera del renderizado d
 | `/invernaderos/:invernaderoId/mediciones/tiempo-real/:tipo` | Tiempo real | Sesión vigente |
 | Cualquier otra URL | Página no encontrada | Público |
 
-El parámetro `tipo` acepta `HumedadSuelo` o `NivelAgua`; otros valores redirigen a mediciones. Los identificadores se conservan como cadenas bigint. Detalle, edición y configuración validan el formato y consultan el registro autorizado. Configurar equipo verifica el rol vigente antes de consultar los recursos administrativos; una pertenencia OPERATOR recibe un aviso sin lanzar esas consultas. La integración de las mediciones sigue pendiente.
+El parámetro `tipo` acepta `HumedadAmbiental`, `HumedadSuelo` o `NivelAgua`; otros valores redirigen a mediciones. Los identificadores se conservan como cadenas bigint. Detalle, edición, configuración e historial validan el formato y consultan el recurso autorizado. Configurar equipo verifica el rol vigente antes de consultar los recursos administrativos; una pertenencia OPERATOR recibe un aviso sin lanzar esas consultas. El historial obtiene su inventario mediante una ruta de lectura separada, válida tanto para ADMIN como para OPERATOR. La conexión del monitoreo en vivo sigue pendiente.
 
 Las pantallas conservan sus callbacks de navegación; los adaptadores de `rutas.tsx` los conectan con `useNavigate`. Los botones Atrás y Adelante del navegador funcionan con el historial de URLs. `ScrollRestoration` recupera la posición al volver y reinicia el desplazamiento en nuevas entradas.
 
@@ -194,6 +195,26 @@ El firmware local revisado en `esp32__client/esp32_monitoring/esp32_monitoring.i
 
 `npm run test:equipos` verifica el flujo de aprovisionamiento con respuestas simuladas, contratos exactos, cancelación, cursores, pertenencias cruzadas, límites Unicode y numéricos, expiración, rotación, revocación y respuestas inciertas. No crea registros o credenciales reales. La interacción visual en navegador y la puesta en marcha del hardware requieren comprobación adicional.
 
+## Historial de mediciones
+
+`/invernaderos/:invernaderoId/mediciones` consulta `GET /greenhouses/:id/sensors` para obtener el inventario público. Devuelve greenhouseId, controllerId (null cuando no hay equipo) e items con id, controllerId, type, unit y connectionStatus. La ruta requiere pertenencia ADMIN u OPERATOR al invernadero, sin exponer claves ni ampliar los permisos de administración de `/controllers`. Funciona aunque el invernadero esté desactivado o su equipo esté bloqueado. No requiere migraciones.
+
+La página distingue carga, error con reintento, invernadero sin equipo, equipo sin sensores y sensor sin lecturas en el período. El inventario es real: solo se ofrecen sensores registrados, incluidos HumedadAmbiental, HumedadSuelo y NivelAgua. Actualizar sensores vuelve a verificar el inventario; no se realizan consultas administrativas para descubrir IDs.
+
+El historial usa `GET /telemetry/sensors/:sensorId/history` con from, to, groupBy, page y limit. Hoy comienza a medianoche de Perú y termina al consultar; Últimos 7 días incluye los seis días anteriores y el día de la consulta. Se envían fechas explícitas ISO UTC: inicio incluido y final excluido. El intervalo permanece fijo al cambiar de página; Actualizar lecturas calcula una ventana nueva y vuelve a la primera página. Esta ventana fija evita que el período avance entre consultas, pero no equivale a una instantánea de PostgreSQL entre peticiones: las muestras enviadas con retraso pueden modificar resultados y conteos.
+
+Cada gráfica muestra exclusivamente los registros de la página indicada, en orden cronológico. Los controles permiten ir a Anterior/Siguiente, regresar a la primera página y elegir 50, 100, 200 o 500 registros. Se respeta el límite de 10000 páginas de la API, con un aviso para usar promedios horarios si se alcanza. Los conteos e identificadores bigint se mantienen como cadenas y los cálculos de páginas usan BigInt.
+
+Se puede alternar entre lecturas individuales y promedios por hora. Últimos 7 días selecciona inicialmente promedios horarios, y Hoy lecturas individuales. La agrupación se calcula en el servidor; la gráfica y su tabla accesible indican si muestran muestras o promedios y el número de muestras de cada grupo. Las estadísticas de promedio, mínimo, máximo y cantidad abarcan el período completo y proceden del resumen de la API, no de la página visible.
+
+La unidad procede del sensor y aparece en cifras, leyendas, títulos accesibles y tabla. Solo las unidades `%` utilizan una escala porcentual; otras unidades ajustan la escala a los valores observados. Las lecturas que coinciden en fecha conservan sus identificadores y no se descartan. En agrupación horaria, las horas sin datos se omiten y no se unen a través de huecos; los valores ausentes y estadísticas null se muestran sin inventar ceros. Una lectura real de cero se conserva.
+
+El servidor usa la fecha medida o, si falta, la de recepción. La interfaz presenta esa fecha en America/Lima. Al cambiar sensor, período, agrupación o página se desmonta la consulta anterior y se cancela su petición, para que una respuesta tardía no sustituya los datos seleccionados. El servicio valida identidad del sensor, unidad, rango, estadísticas, secuencia de fechas y coherencia de paginación antes de publicar una respuesta.
+
+La composición se divide en HistorialSensores (filtros y ventana fija), ConsultaHistorial (carga cancelable), ResumenHistorial y PaginacionHistorial. El transporte y la validación del contrato están en `services/historial.ts`; GraficaMediciones recibe datos y unidades por propiedades. Los comentarios y documentación se mantienen en español.
+
+`npm run test:historial` no usa cuentas ni bases reales. Incluye pruebas con respuestas HTTP simuladas y renderizado estático de las gráficas; no sustituye la comprobación interactiva en navegador ni el historial contra PostgreSQL desplegado. La nueva ruta de inventario debe desplegarse en el servidor para que la pantalla funcione con la API de Cloudflare. El acceso a la pantalla de tiempo real se conserva y se indica expresamente que su conexión en vivo se implementará después.
+
 ## Estado de funcionalidades
 
 - Login y registro de usuario: conectados al servicio HTTP; requieren un backend compatible.
@@ -202,10 +223,11 @@ El firmware local revisado en `esp32__client/esp32_monitoring/esp32_monitoring.i
 - Registro de invernaderos: conectado con validación del DTO y creación separada del equipo.
 - Detalle: datos, acceso a edición y configuración de equipo conectados; control de riego pendiente. Se utiliza desactivación reversible en lugar del botón de eliminación pendiente.
 - Equipo: registro de ESP32, sensores, credenciales, activación y bloqueo conectados a la API existente.
-- Mediciones y tiempo real: componentes preparados para recibir lecturas por propiedades; aún no se suministran datos desde las rutas ni existe una suscripción en tiempo real.
+- Historial: conectado al inventario y la API de lecturas con unidades, estadísticas, fechas de Perú, agrupación y paginación.
+- Tiempo real: pantalla preparada; la suscripción y concesiones del canal en vivo siguen pendientes.
 - Perfil y cierre de sesión: conectados; accesibles desde la navegación inferior. Filtros, notificaciones y configuración: pendientes de implementación.
 
-Las pantallas de detalle y mediciones pueden abrirse por URL con sesión y el detalle puede abrirse desde una tarjeta de la lista. Las lecturas, el monitoreo y los actuadores permanecen pendientes de integración con sus respectivas pantallas. No se generan identificadores ni lecturas ficticias.
+Las pantallas de detalle y mediciones pueden abrirse por URL con sesión y el detalle puede abrirse desde una tarjeta de la lista. Los valores de resumen de sensores en el detalle, el monitoreo en vivo y los actuadores permanecen pendientes de integración con sus respectivas pantallas. No se generan identificadores ni lecturas ficticias.
 
 ## Despliegue
 

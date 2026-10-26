@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test:auth": "node --test tests/auth.test.mjs",
     "test:invernaderos": "node --test tests/invernaderos.test.mjs",
-    "test:equipos": "node --test tests/equipos.test.mjs"
+    "test:equipos": "node --test tests/equipos.test.mjs",
+    "test:historial": "node --test tests/historial.test.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

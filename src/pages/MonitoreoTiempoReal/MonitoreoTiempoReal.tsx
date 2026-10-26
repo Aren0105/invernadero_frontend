@@ -14,7 +14,8 @@ export default function MonitoreoTiempoReal({ onVolver, tipo, sensor }: Props) {
   const seleccionado = sensor?.tipo === tipo ? sensor : undefined
   const lecturas = ordenarLecturas(seleccionado?.lecturas ?? []).slice(-60)
   const ultima = lecturas.at(-1)
-  const Icono = tipo === 'HumedadSuelo' ? Droplets : Waves
+  const unidad = seleccionado?.unidad || '—'
+  const Icono = tipo === 'NivelAgua' ? Waves : Droplets
   return (
     <div className="min-h-dvh bg-[#F5F8F5] text-[#233D32]">
       <header className="flex items-center gap-1 border-b border-[#D8DEDA] bg-white px-4 py-3"><Boton type="button" onClick={onVolver} aria-label="Volver a Mediciones" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"><ArrowLeft className="h-5 w-5" aria-hidden="true" /></Boton><Titulo className="text-lg font-semibold">Monitoreo en tiempo real</Titulo></header>
@@ -23,11 +24,11 @@ export default function MonitoreoTiempoReal({ onVolver, tipo, sensor }: Props) {
         <Tarjeta como="section" variante="centrada" aria-label="Última medición recibida">
           <Icono className="mx-auto mb-4 h-10 w-10 text-[#2F704B]" aria-hidden="true" />
           <Texto className="text-xs font-semibold tracking-wide text-[#738077]">ÚLTIMA MEDICIÓN RECIBIDA</Texto>
-          <Texto aria-live="polite" aria-atomic="true" className="my-4 text-5xl font-semibold">{ultima?.valor ?? '—'}<span className="ml-1 text-2xl">%</span></Texto>
+          <Texto aria-live="polite" aria-atomic="true" className="my-4 text-5xl font-semibold">{ultima?.valor ?? '—'}<span className="ml-1 text-2xl">{unidad}</span></Texto>
           <Texto className="text-xs text-[#738077]">Última actualización: {fechaLectura(ultima?.fechaHora)}</Texto>
         </Tarjeta>
         <Tarjeta como="div" variante="aviso">{ultima ? 'Se muestra la última lectura recibida. Revisa su fecha para conocer su antigüedad.' : 'Sin datos disponibles. Esperando la conexión con las mediciones del sensor.'}</Tarjeta>
-        <section><Titulo nivel={2} className="mb-3 text-sm font-semibold">Lecturas recientes</Titulo><GraficaMediciones lecturas={lecturas} nombre={nombresMedicion[tipo]} /></section>
+        <section><Titulo nivel={2} className="mb-3 text-sm font-semibold">Lecturas recientes</Titulo><GraficaMediciones lecturas={lecturas} nombre={nombresMedicion[tipo]} unidad={unidad} /></section>
       </main>
     </div>
   )
