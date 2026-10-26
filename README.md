@@ -1,225 +1,256 @@
-# React + TypeScript + Vite
-# Invernadero Frontend
+# AquaSmart · Invernadero Frontend
 
-Frontend para la gestión de invernaderos, monitoreo de sensores y visualización de mediciones.
+Frontend para gestionar invernaderos y visualizar mediciones, construido con React, TypeScript, Vite, Tailwind CSS y React Router.
 
-## Descripción general
-
-Esta aplicación permite:
-
-- iniciar sesión y cerrar sesión
-- registrar un invernadero
-- ver la lista de invernaderos
-- consultar el detalle del invernadero
-- ver mediciones
-- ver monitoreo en tiempo real
-- navegar entre pantallas de forma local dentro de la app
-
-La vista principal se controla desde `src/App.tsx`, donde se alternan pantallas según el estado de sesión y la navegación interna.
-
-## Stack
-
-- React
-- TypeScript
-- Vite
-- CSS moderno (sin necesidad de librerías externas)
-- Servicios HTTP para comunicación con el backend
-
-## Estructura del proyecto
-
-```text
-src/
-├── App.tsx
-├── components/         # componentes reutilizables
-├── pages/              # pantallas principales
-│   ├── Login.tsx
-│   ├── MisInvernaderos.tsx
-│   ├── RegistrarInvernadero.tsx
-│   ├── DetalleInvernadero.tsx
-│   ├── MonitoreoMediciones.tsx
-│   └── MonitoreoTiempoReal.tsx
-├── services/
-│   └── api.ts
-├── types/
-│   └── mediciones.ts
-├── main.tsx
-└── index.css
-```
-
-## Pantallas principales
-
-### Login
-Pantalla de acceso inicial. Cuando el usuario inicia sesión, se activa la sesión local y se muestra la vista de invernaderos.
-
-### MisInvernaderos
-Lista de invernaderos disponibles para el usuario autenticado.
-
-### RegistrarInvernadero
-Formulario para registrar un nuevo invernadero.
-
-### DetalleInvernadero
-Muestra el detalle del invernadero seleccionado.
-
-### MonitoreoMediciones
-Muestra mediciones del tipo seleccionado.
-
-### MonitoreoTiempoReal
-Pantalla para ver el estado de una medición en tiempo real.
-
-## Flujo de navegación
-
-La app trabaja con un estado local de pantalla:
-
-- `login`
-- `invernaderos`
-- `registro`
-- `detalle`
-- `mediciones`
-- `tiempoReal`
-
-La navegación se realiza desde `App.tsx` mediante:
-
-```ts
-function navegar(destino: Pantalla) {
-  setPantalla(destino)
-  window.scrollTo(0, 0)
-}
-```
-
-## Sesión actual
-
-La sesión se gestiona con un timestamp local:
-
-```ts
-const [sesionHasta, setSesionHasta] = useState<number | null>(null)
-```
-
-Cuando hay sesión, se dispara un `useEffect` para cerrar automáticamente la sesión al vencerse el tiempo.
-
-```ts
-useEffect(() => {
-  if (!sesionHasta) return
-  const temporizador = window.setTimeout(() => {
-    cerrarSesionLocal()
-    setSesionHasta(null)
-  }, Math.max(0, sesionHasta - Date.now()))
-  return () => window.clearTimeout(temporizador)
-}, [sesionHasta])
-```
-
-Importante:
-- Esto es una sesión local de frontend.
-- No es persistencia real de autenticación.
-- En producción, conviene usar un backend con JWT real y almacenamiento seguro.
-
-## Servicios API
-
-El acceso al backend está centralizado en `src/services/api.ts`.
-
-Funciones esperadas comunes:
-
-- `login`
-- `register`
-- `logout`
-- `obtenerInvernaderos`
-- `obtenerDetalleInvernadero`
-- `obtenerMediciones`
-- `obtenerTiempoReal`
-
-Se recomienda que todas las llamadas a recursos protegidos incluyan:
-
-```http
-Authorization: Bearer <token>
-```
-
-## Requisitos
-
-- Node.js 18 o superior
-- npm o pnpm
-
-## Instalación
+## Instalación y ejecución
 
 ```bash
 npm install
-```
-
-## Scripts
-
-### Desarrollo
-
-```bash
 npm run dev
 ```
 
-### Build
-
-```bash
-npm run build
-```
-
-### Preview
-
-```bash
-npm run preview
-```
-
-## Variables de entorno
-
-Si el proyecto usa configuración externa, crear un archivo `.env` en la raíz:
+Utiliza una versión de Node.js compatible con la versión de Vite instalada.
+Configura la dirección del backend en un archivo `.env` en la raíz:
 
 ```env
 VITE_API_URL=http://localhost:3000
 ```
 
-Ajustar la URL según el backend real.
+Sin esta variable, los servicios muestran un error de configuración al intentar conectarse.
 
-## Convenciones actuales del proyecto
+## Scripts
 
-- Los nombres de pantallas y tipos están en español.
-- Los tipos de mediciones se centralizan en `src/types/mediciones.ts`.
-- La UI está pensada para una experiencia móvil/compacta con ancho máximo de 430px.
-- Los estados de pantalla están manejados localmente, no con router.
+- `npm run dev`: inicia el servidor de desarrollo.
+- `npm run build`: comprueba TypeScript y genera la aplicación en `dist/`.
+- `npm run lint`: ejecuta ESLint.
+- `npm run test:auth`: verifica el contrato del login con respuestas HTTP simuladas, sin credenciales reales.
+- `npm run test:invernaderos`: comprueba la paginación, búsqueda, identificadores y errores con respuestas simuladas.
+- `npm run test:equipos`: verifica registro de invernadero, sensores, credenciales y activación con transporte simulado.
+- `npm run preview`: sirve la compilación para comprobarla localmente.
 
-## Notas de autenticación y backend
+## Estructura
 
-El frontend actual espera que el backend implemente:
-
-- registro de usuarios
-- login con email/password
-- manejo de sesión JWT
-- permisos por rol
-- acceso a invernaderos por usuario
-
-En la implementación actual, la sesión se estaba manejando de forma local; esto sirve para prototipos o pruebas, pero para uso real se recomienda:
-
-- guardar token de forma persistente
-- validar expiración en backend
-- validar rol en cada recurso protegido
-- no depender únicamente del estado local del frontend
-
-## Estado del proyecto
-
-El frontend está en una etapa de prototipo funcional para:
-
-- navegación visual
-- pruebas de flujo de UI
-- integración con backend real
-
-Falta aún:
-
-- autenticación real persistente
-- conexión segura con backend de producción
-- manejo robusto de roles
-- almacenamiento verdadero de sesión
-- control de permisos por invernadero y sensor
-
-## Siguientes pasos recomendados
-
-1. Vincular el frontend con el backend real
-2. Centralizar los endpoints en `services/api.ts`
-3. Guardar el token JWT de forma segura
-4. Validar permisos por usuario y rol
-5. Persistir sesión entre recargas
-6. Añadir manejo de errores global para login, fetch y permisos
-
+```text
+src/
+├── main.tsx            # Punto de entrada con RouterProvider
+├── router.tsx          # Configuración de createBrowserRouter
+├── rutas.tsx           # Adaptadores y protección de rutas
+├── App.tsx             # Diseño, recuperación inicial y renovación programada
+├── components/         # Componentes reutilizables y gráfica SVG
+├── hooks/              # Consultas cancelables compartidas
+├── pages/              # Una carpeta por pantalla, con index.ts y su componente principal
+├── services/           # Transporte HTTP, sesión, invernaderos y administración de equipos
+├── types/              # Tipos y transformaciones de invernaderos, equipos y mediciones
+└── utils/              # Validación de formularios y adaptación al contrato de creación
 ```
+
+## Navegación
+
+Se utiliza una instancia de `createBrowserRouter` creada fuera del renderizado de React. `main.tsx` la entrega a `RouterProvider`; `App.tsx` muestra las rutas hijas mediante `Outlet` y mantiene el diseño móvil de ancho máximo de 430 px.
+
+| URL | Pantalla | Acceso |
+| --- | --- | --- |
+| `/` | Redirección a `/invernaderos` | Según sesión |
+| `/login` | Inicio de sesión | Sin sesión |
+| `/registro` | Registro de usuario | Sin sesión |
+| `/perfil` | Perfil y cierre de sesión | Sesión vigente |
+| `/invernaderos` | Mis invernaderos | Sesión vigente |
+| `/invernaderos/nuevo` | Registrar invernadero | Sesión vigente |
+| `/invernaderos/:invernaderoId/editar` | Consulta de datos para edición | Sesión vigente; guardado pendiente del backend |
+| `/invernaderos/:invernaderoId` | Detalle | Sesión vigente |
+| `/invernaderos/:invernaderoId/equipo` | Configurar equipo | ADMIN de ese invernadero |
+| `/invernaderos/:invernaderoId/mediciones` | Mediciones | Sesión vigente |
+| `/invernaderos/:invernaderoId/mediciones/tiempo-real/:tipo` | Tiempo real | Sesión vigente |
+| Cualquier otra URL | Página no encontrada | Público |
+
+El parámetro `tipo` acepta `HumedadSuelo` o `NivelAgua`; otros valores redirigen a mediciones. Los identificadores se conservan como cadenas bigint. Detalle, edición y configuración validan el formato y consultan el registro autorizado. Configurar equipo verifica el rol vigente antes de consultar los recursos administrativos; una pertenencia OPERATOR recibe un aviso sin lanzar esas consultas. La integración de las mediciones sigue pendiente.
+
+Las pantallas conservan sus callbacks de navegación; los adaptadores de `rutas.tsx` los conectan con `useNavigate`. Los botones Atrás y Adelante del navegador funcionan con el historial de URLs. `ScrollRestoration` recupera la posición al volver y reinicia el desplazamiento en nuevas entradas.
+
+Si se solicita una ruta protegida sin sesión, se redirige a `/login` conservando el destino. Después de iniciar sesión se recupera esa URL. Cualquier cuenta autenticada puede abrir `/invernaderos/nuevo`: el backend asigna `ADMIN` al creador de ese nuevo invernadero.
+
+## Sesión y API
+
+La autenticación sigue el contrato de `invernadero__server/src/auth/auth.controller.ts` y `auth.service.ts`:
+
+| Operación | Petición y resultado |
+| --- | --- |
+| Login | `POST /auth/login` con correo y contraseña; obtiene acceso, duración, perfil y cookie refresh. |
+| Alta | `POST /auth/register` con nombre, correo y contraseña; aprovecha la sesión emitida para entrar directamente. |
+| Verificación | `GET /auth/me` con Bearer tras login o alta; valida `{ id, name, email }`. |
+| Recuperación y renovación | `POST /auth/refresh` con cookie HttpOnly, sin Bearer; rota el refresh de uso único. |
+| Cierre | `POST /auth/logout` con cookie, incluso si venció el acceso. Si falta la cookie y el acceso sigue vigente, utiliza ese acceso como respaldo para revocar. |
+
+El token de acceso permanece en una variable privada del gestor. El refresh solo viaja como cookie HttpOnly: React no lo lee. No se guardan tokens, contraseñas ni perfiles en localStorage o sessionStorage. Las operaciones de cookie usan `credentials: 'include'`; los recursos protegidos usan Bearer y `credentials: 'omit'`.
+
+`App.tsx` observa el gestor con `useSyncExternalStore` y espera la recuperación inicial antes de renderizar las rutas. El arranque comparte una promesa para evitar dobles renovaciones con StrictMode. Renueva aproximadamente 30 segundos antes del vencimiento y comprueba el tiempo al recuperar foco, visibilidad o conexión. Los temporizadores no sustituyen la verificación del servidor.
+
+Las peticiones protegidas usan `peticionApi`. Si el acceso ya venció, renueva antes de enviar; si el servidor devuelve 401, comparte una renovación con las demás peticiones y reintenta el recurso una sola vez. Un 401 tardío reutiliza el acceso ya renovado. Un segundo 401 termina la sesión. Los códigos 403 y 5xx y los errores de red no reenvían la operación. La cancelación del consumidor se conserva y los cuerpos ReadableStream se rechazan porque no pueden reenviarse. El transporte impone 15 segundos de timeout, `cache: 'no-store'` y rechaza redirecciones HTTP y URLs externas.
+
+El gestor invalida las respuestas que llegan tras un cierre o cambio de sesión. Si la renovación devuelve otra cuenta, no reenvía una operación de la cuenta anterior; el diseño desmonta el contenido privado al cambiar de usuario. Los roles `ADMIN` y `OPERATOR` se consultan por invernadero; no existe un rol global en el perfil.
+
+### Pestañas y cierre pendiente
+
+Web Locks serializa login, alta, refresh y logout entre pestañas del mismo origen y para la misma URL de API. BroadcastChannel y el evento storage notifican cambios. localStorage conserva únicamente una revisión aleatoria, un estado abierto/cerrado y una bandera de cierre pendiente. No se comparten tokens por esos canales. Cada pestaña recibe su acceso mediante un canje serial de la cookie ya actualizada.
+
+Al cerrar se bloquea inmediatamente la interfaz y se solicita la revocación. Los demás clientes del mismo origen descartan su acceso. Si falla la red o no se consigue el bloqueo, la intención de cierre queda persistida y se muestra **Cierre de sesión pendiente**. Al recargar se intenta completar `/auth/logout`, sin recuperar automáticamente esa cuenta. El botón de reintento permite confirmar el cierre. Un 401 de logout se interpreta como cookie ya no autorizada; el controlador también la elimina.
+
+Los errores de red, 429, origen o respuesta inesperada durante la recuperación muestran un estado de error con reintento explícito. No se crean bucles de refresh ni se interpretan fallos de red como credenciales incorrectas. Un 401 de refresh vuelve al acceso.
+
+### Requisitos del navegador y despliegue
+
+- Abrir la aplicación con HTTPS o localhost y un navegador con Web Locks. Si no hay coordinación segura, se muestra el error en vez de rotar cookies en paralelo.
+- Permitir el almacenamiento local para los metadatos de coordinación. Su borrado manual elimina la marca de cierre pendiente.
+- El servidor debe permitir el origen exacto del frontend en `WEB_ORIGINS` y CORS con credenciales; el código actual del servidor ya configura `credentials: true`. `localhost` y `127.0.0.1` son orígenes distintos.
+- Con frontend y API en sitios distintos, el servidor requiere `COOKIE_SAME_SITE=none`, `COOKIE_SECURE=true` y API HTTPS. Si el navegador bloquea cookies de terceros, no se puede garantizar la recuperación tras recarga; para ese entorno se necesita un despliegue en el mismo sitio o permitir las cookies de la API.
+- No se fija manualmente el encabezado Origin ni se intenta leer Set-Cookie; los gestiona el navegador. El servidor comprueba Origin en refresh y logout y conserva el vencimiento absoluto de la sesión.
+- La coordinación cubre pestañas del mismo origen. No sincroniza aplicaciones alojadas en orígenes diferentes, navegadores diferentes o dispositivos distintos.
+
+### Pruebas
+
+`npm run test:auth` ejecuta escenarios con transporte y coordinación simulados: login/alta, recuperación, tokens inválidos, concurrencia de 401, rotación serial entre pestañas, cierre durante renovación, respuestas tardías, cambio de cuenta, cierre pendiente y cancelación. No utiliza cuentas, cookies, tokens ni bases de datos reales. La aceptación efectiva de cookies, CORS y la revocación en PostgreSQL deben comprobarse además con el despliegue real y las pruebas del backend.
+
+## Registro de usuarios
+
+`RegistroUsuario` sigue `RegisterDto`, `LoginDto` y `UsersService` del servidor. La validación local se comparte con login en `src/utils/autenticacion.ts` y utiliza validator.js 13.15.35, la versión instalada en el backend, para mantener el formato de correo y el cómputo de longitud Unicode.
+
+| Campo | Regla |
+| --- | --- |
+| Nombre | Se recortan los espacios exteriores; de 2 a 80 caracteres. |
+| Correo | Se recorta y normaliza a minúsculas; `IsEmail` y hasta 254 caracteres, con los límites internos del formato de correo. |
+| Contraseña | De 8 a 128 caracteres; se conserva exactamente, incluidos los espacios. No se agregan requisitos de composición que el servidor no tenga. |
+| Confirmación | Obligatoria e idéntica a la contraseña; se comprueba localmente y no se envía. |
+
+Los controles no truncan cadenas mediante un máximo HTML contado en unidades UTF-16: las longitudes se comprueban al enviar con la misma regla Unicode del servidor. Nombre y contraseña muestran sus límites en la interfaz. Login utiliza las mismas reglas de credenciales para permitir acceder con los datos que fueron válidos durante el alta.
+
+Se envía únicamente `{ name, email, password }` a `POST /auth/register`, con cookie habilitada. La página bloquea los controles y el botón de volver mientras se procesa el envío, impide el doble envío y abre la aplicación después de verificar la sesión. No envía roles, identificadores ni campos de confirmación.
+
+Los rechazos 400/422 identifican los campos conocidos del DTO y se muestran en español; el 409 señala el correo duplicado. El foco vuelve al campo rechazado después de habilitarlo. Los códigos 403 y 429 conservan mensajes de origen no autorizado y límite de intentos, respectivamente. Un rechazo 4xx no provoca un logout adicional que pudiera ocultar la validación o consumir otro intento.
+
+La cuenta puede guardarse antes de que falle una etapa posterior. Si la respuesta del alta fue exitosa pero falla el token o `/auth/me`, se muestra **Tu cuenta ya está creada** y se ofrece iniciar sesión. Si se pierde la respuesta o hay un 5xx, se muestra **Registro pendiente de confirmar** y se recomienda intentar el acceso antes de repetir el alta. El POST de registro nunca se reintenta automáticamente. Si además falla la limpieza de la sesión, se mantiene el cierre pendiente con el aviso de que la cuenta fue creada.
+
+Las pruebas de `npm run test:auth` incluyen los límites del formulario, Unicode, espacios en contraseñas, contrato JSON exacto, 201/400/403/409/429/5xx, errores de perfil y resultados inciertos. Se utilizan datos ficticios y respuestas simuladas; no se crean cuentas reales ni se modifican bases de datos.
+
+## Mis invernaderos
+
+`services/invernaderos.ts` usa el transporte autenticado para consultar `GET /greenhouses`. Recupera todas las páginas mediante `nextBeforeId` y `beforeId`; solo publica la lista completa cuando todas las páginas son válidas. Comprueba el orden de los identificadores y el avance del cursor para evitar duplicados o ciclos. Los errores de conexión o contrato se presentan con reintento, nunca como una lista vacía.
+
+La página separa la carga en `useInvernaderos`, la búsqueda en `components/BusquedaInvernaderos` y cada registro en `components/TarjetaInvernadero`. Los componentes reciben sus valores y callbacks; el servicio adapta el contrato del servidor y las rutas deciden la navegación. Los controles generales continúan en `components/ui`.
+
+Cada tarjeta muestra nombre, descripción y estado. La descripción procede de `description` en el servidor; si es nula o está vacía, se muestra **Sin descripción**. La pantalla de edición consulta el mismo dato y lo presenta en un área de texto.
+
+La búsqueda se aplica por nombre al enviar con Enter o con la lupa, sin distinguir mayúsculas ni tildes. Al borrar el campo se restauran todos los registros. Se muestran **No hay invernaderos registrados** para una cuenta sin registros y **No se encontraron invernaderos** cuando un nombre no coincide. El resumen cuenta todas las pertenencias, incluidos los invernaderos en mantenimiento o desactivados.
+
+La tarjeta abre el detalle del identificador seleccionado. El lápiz abre `/invernaderos/:invernaderoId/editar` mediante un botón independiente. La lista se vuelve a consultar al entrar, al recuperar el foco o la visibilidad y al recuperar conexión; las consultas se cancelan al salir. Volver desde registro o edición provoca una nueva consulta, sin depender de una lista almacenada en memoria.
+
+### Límites del servidor actual
+
+El contrato revisado permite listar, consultar y crear con descripción, pero no tiene rutas para editar o desactivar un invernadero. La pantalla de edición consulta los datos actuales e informa que el guardado aún no está disponible. No se envían PATCH/DELETE a endpoints inexistentes ni se simulan cambios locales. Bloquear las comunicaciones de un controlador es una operación distinta de desactivar el invernadero.
+
+`npm run test:invernaderos` utiliza respuestas HTTP simuladas para comprobar páginas sucesivas, búsqueda por nombre, bigint, cancelación, errores y rechazo de contratos inválidos. No modifica cuentas ni la base de datos y no reemplaza una comprobación de navegación en el navegador con el backend desplegado.
+
+## Registro de invernaderos y configuración del equipo
+
+RegistrarInvernadero crea exclusivamente el invernadero mediante `POST /greenhouses`. Exige nombre (1–100 caracteres después de recortar), ubicación (1–200), largo y ancho en metros (0.01–999999.99, hasta dos decimales). Alto y descripción son opcionales; la descripción admite hasta 500 caracteres. El área se calcula para mostrarla, pero no se envía. No se envían cultivo, controlador, sensores, propietario ni rol. El servidor obtiene la cuenta de su sesión y asigna ADMIN en la misma transacción del alta.
+
+Al guardar, el formulario abre el detalle con la confirmación de éxito y la opción Configurar equipo; la navegación espera a liberar el bloqueo de la escritura. No repite el POST automáticamente. Ante una respuesta perdida, 5xx o una respuesta exitosa que no puede interpretarse, bloquea nuevos envíos desde ese formulario y ofrece revisar Mis invernaderos antes de repetir el registro. Los rechazos 4xx permiten corregir el formulario.
+
+El detalle consulta nombre, descripción, ubicación, dimensiones, estado y modo de operación reales. Para ADMIN agrega la sección Equipo, que permite comenzar o retomar la configuración. Si falla la consulta del equipo, conserva la información del invernadero y ofrece abrir su configuración para reintentar. Los estados de riego y las lecturas no se simulan.
+
+ConfigurarEquipo separa la coordinación en `useConfiguracionEquipo` y la presentación en componentes para registrar el ESP32, administrar sensores, administrar credenciales, mostrar parámetros de instalación y controlar la activación. `services/equipos.ts` interpreta y valida los recursos HTTP; los controles de presentación siguen en `components/ui`.
+
+| Acción | API utilizada | Comportamiento |
+| --- | --- | --- |
+| Consultar equipo | `GET /controllers?beforeId=...` | Recorre todas las páginas y localiza el único ESP32 del invernadero. |
+| Registrar ESP32 | `POST /controllers` | Envía greenhouseId y nombre; se crea desactivado. |
+| Consultar/agregar sensores | `GET/POST /controllers/:id/sensors` | Permite HumedadAmbiental, HumedadSuelo y NivelAgua, uno de cada tipo. |
+| Consultar claves | `GET /controllers/:id/credentials?beforeId=...` | Recorre todas las páginas de metadatos; no conserva campos secretos adicionales. |
+| Emitir clave | `POST /controllers/:id/credentials` | Vencimiento opcional; muestra el original únicamente durante esa visita. |
+| Reemplazar claves | `POST /controllers/:id/credentials/rotate` | Requiere confirmación porque invalida las anteriores. |
+| Revocar clave | `DELETE /controllers/:id/credentials/:credentialId` | Requiere confirmación y conserva el registro revocado. |
+| Habilitar/bloquear | `PATCH /controllers/:id` | Cambia active; habilitar exige una credencial vigente verificada nuevamente por el servidor. |
+
+Las fechas opcionales del formulario se interpretan en la zona local y se envían en ISO con zona UTC. La UI distingue credenciales vigentes, vencidas y revocadas. Una clave sin vencimiento puede revocarse. La rotación no se confunde con emitir una clave adicional, que permite una transición sin invalidar inmediatamente la anterior.
+
+Las escrituras se ejecutan de una en una, con bloqueo síncrono de dobles envíos. Cada éxito vuelve a consultar los recursos persistidos. No hay reintentos automáticos de emisión o alta; los resultados inciertos bloquean otras escrituras hasta actualizar y revisar los datos. La renovación de sesión puede repetir una petición rechazada con 401 antes de ejecutarse, conforme al gestor de autenticación existente.
+
+Los secretos originales permanecen solamente en el estado de la página, nunca en localStorage, sessionStorage, la URL o metadatos de coordinación. La persona puede copiarlos y debe confirmar que los guardó antes de ocultarlos. Al intentar salir con una clave visible se muestra un diálogo nativo; durante una escritura se pide esperar. Recargar o cerrar la pestaña utiliza el aviso del navegador. El permiso de copiar depende del contexto seguro y del navegador; si falla, se ofrece copia manual. El portapapeles queda bajo control del sistema operativo.
+
+### Instalación y comunicación física
+
+La pantalla muestra la URL de API y los identificadores reales del controlador y sus sensores para configurar el firmware, junto con la credencial emitida por separado. Registrar sensores no configura pines, drivers ni calibración. Una unidad registrada no transforma los valores recibidos: debe coincidir con lo que envía la placa.
+
+Habilitado significa autorización para comunicarse, no presencia física continua. Se muestran el último estado registrado y la fecha de última comunicación; Actualizar datos vuelve a consultarlos. No se envían JWT humanos a `/controllers/me` ni a `/telemetry` para simular que la placa está conectada. Esas rutas deben ser usadas por el ESP32 con su propia clave.
+
+El firmware local revisado en `esp32__client/esp32_monitoring/esp32_monitoring.ino` solo inicia lecturas locales por Serial. La integración de sus drivers con `sensorAvailable`/`readSensorValue`, su calibración y el arranque de la comunicación deben completarse en el proyecto de la placa para recibir datos reales. Esta implementación de la interfaz no modifica el firmware ni carga configuraciones en hardware.
+
+`npm run test:equipos` verifica el flujo de aprovisionamiento con respuestas simuladas, contratos exactos, cancelación, cursores, pertenencias cruzadas, límites Unicode y numéricos, expiración, rotación, revocación y respuestas inciertas. No crea registros o credenciales reales. La interacción visual en navegador y la puesta en marcha del hardware requieren comprobación adicional.
+
+## Estado de funcionalidades
+
+- Login y registro de usuario: conectados al servicio HTTP; requieren un backend compatible.
+- Lista de invernaderos: conectada, con contador, búsqueda por nombre, selección, mensajes vacíos y reintento.
+- Edición de invernaderos: navegación y consulta conectadas; guardado y desactivación pendientes de soporte del servidor.
+- Registro de invernaderos: conectado con validación del DTO y creación separada del equipo.
+- Detalle: datos del invernadero y acceso a configuración de equipo conectados; eliminación y control de riego pendientes.
+- Equipo: registro de ESP32, sensores, credenciales, activación y bloqueo conectados a la API existente.
+- Mediciones y tiempo real: componentes preparados para recibir lecturas por propiedades; aún no se suministran datos desde las rutas ni existe una suscripción en tiempo real.
+- Perfil y cierre de sesión: conectados; accesibles desde la navegación inferior. Filtros, notificaciones y configuración: pendientes de implementación.
+
+Las pantallas de detalle y mediciones pueden abrirse por URL con sesión y el detalle puede abrirse desde una tarjeta de la lista. Las lecturas, el monitoreo y los actuadores permanecen pendientes de integración con sus respectivas pantallas. No se generan identificadores ni lecturas ficticias.
+
+## Despliegue
+
+El servidor de producción debe servir `index.html` para las URLs de la aplicación que no correspondan a archivos estáticos. Esta regla de fallback es necesaria para abrir enlaces directos o recargar rutas como `/invernaderos/123/mediciones` con `createBrowserRouter`.
+
+## Componentes reutilizables
+
+Los componentes generales de presentación se limitan a renderizar estilos y elementos HTML. Las páginas y sus hooks controlan carga, persistencia y navegación; los formularios de dominio pueden administrar su selección o validación local y reciben callbacks para solicitar las escrituras. Los controles de `components/ui` no interpretan datos del dominio ni realizan peticiones.
+
+| Componente | Responsabilidad |
+| --- | --- |
+| `ui/Entrada` | Único input con variantes visuales `suave`, `redondeada` y `busqueda`. Recibe `type`, `value`, `defaultValue`, eventos, atributos ARIA y `ref` nativos. |
+| `AreaTexto` | Control `textarea` nativo con estilo redondeado; conserva sus atributos y su referencia. |
+| `ui/Seleccion` | Selector nativo sin estado; recibe opciones mediante children y atributos nativos para valor, eventos y accesibilidad. |
+| `ui/Boton` | Botón de presentación con variantes `libre`, `celeste`, `azul`, `verde` y `segmento`. Recibe contenido por `children`, y eventos, `disabled` y `ref` nativos. |
+| `ui/Tipografia` | Un solo `Titulo` para los niveles `h1` a `h6`, con estilo `normal` o `seccion`, y `Texto` para párrafos. |
+| `ui/Tarjeta` | Contenedor sin interpretación de datos, con variantes `normal`, `verde`, `centrada`, `resumen` y `aviso`. Recibe contenido mediante `children`. |
+| `NavegacionPrincipal` | Menú que recibe opciones, iconos, acciones y selección; no conoce rutas ni opciones específicas de AquaSmart. |
+
+Las opciones propias de la aplicación están en `src/config/navegacion.tsx`. Cada página suministra las acciones y los identificadores de selección al menú.
+
+Los campos de contraseña utilizan el mismo `Entrada` que los campos de texto. La página decide el atributo `type` y compone por separado el botón de visibilidad, la etiqueta y los mensajes. Los botones de envío reciben el indicador de carga como contenido; la página decide cuándo deshabilitarlos. Los selectores utilizan `Boton` con la variante `segmento` y reciben `aria-pressed` y sus colores desde la página.
+
+```tsx
+const [visible, setVisible] = useState(false)
+
+<label htmlFor="clave">Contraseña</label>
+<Entrada
+  id="clave"
+  name="clave"
+  type={visible ? 'text' : 'password'}
+  autoComplete="current-password"
+  aria-invalid={!!error}
+  aria-describedby={error ? 'error-clave' : undefined}
+/>
+<Boton type="button" aria-pressed={visible} onClick={() => setVisible(!visible)}>
+  {visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+</Boton>
+{error && <Texto id="error-clave" role="alert">{error}</Texto>}
+
+<Boton variante="celeste" type="submit" disabled={cargando}>
+  {cargando && <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />}
+  {cargando ? 'GUARDANDO…' : 'GUARDAR'}
+</Boton>
+
+<Tarjeta como="section" variante="centrada" aria-label="Última lectura">
+  <Titulo nivel={2}>Humedad del suelo</Titulo>
+  <Texto>42 %</Texto>
+</Tarjeta>
+```
+
+En botones, entradas y tarjetas, `className` añade ajustes a la variante. Evita clases contradictorias con esa variante. En tipografía y navegación, `className` sustituye el estilo predeterminado. El consumidor mantiene las asociaciones entre `label`, `id` y `aria-describedby`, y define `type="button"` en las acciones que no envíen formularios.
+
+## Convenciones
+
+Los nombres del dominio y los comentarios del código se escriben en español. Las lecturas se ordenan y deduplican por fecha; los períodos y las etiquetas se calculan para Perú (`America/Lima`).

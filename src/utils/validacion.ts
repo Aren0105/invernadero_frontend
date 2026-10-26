@@ -1,3 +1,4 @@
+/** Valida los controles habilitados del formulario según las reglas generales de la interfaz. */
 export function validarFormulario(
   form: HTMLFormElement,
 ): Record<string, string> {
@@ -34,6 +35,7 @@ export function validarFormulario(
   return errores;
 }
 
+/** Mueve el foco al primer campo con error, siguiendo el orden de inserción del registro recibido. */
 export function enfocarPrimerError(
   form: HTMLFormElement,
   errores: Record<string, string>,
