@@ -194,4 +194,15 @@ test('Historial: fechas, permisos de lectura, unidades y páginas', async (t) =>
     assert.ok(hueco.includes('Promedios por hora'))
     assert.equal(errores.length, 0)
   })
+  await t.test('consulta temperaturas negativas sin aceptarlas en humedad o nivel', async () => {
+    const temperatura = { ...sensor, tipo: 'Temperatura', unidad: '°C' }
+    const respuesta = pagina([muestra('1', -5)])
+    respuesta.sensor = { ...respuesta.sensor, type: 'Temperatura', unit: '°C' }
+    respuesta.summary = { count: '1', minimum: -5, maximum: -5, average: -5 }
+    const servicio = crearServicioHistorial(async () => Response.json(respuesta))
+    assert.equal((await servicio.consultar(temperatura, consulta)).lecturas[0].valor, -5)
+    respuesta.sensor = { ...respuesta.sensor, type: 'NivelAgua', unit: 'cm' }
+    await assert.rejects(servicio.consultar(sensor, consulta))
+  })
+
 })

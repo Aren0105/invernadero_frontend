@@ -16,7 +16,7 @@ export default function FormularioControlador({ deshabilitado, onRegistrar }: { 
     setError('')
     void onRegistrar(nombre)
   }} className="space-y-3">
-    <Texto className="text-sm text-[#64766A]">Este invernadero todavía no tiene equipo. Registra su ESP32 para continuar.</Texto>
+    <Texto className="text-sm text-[#64766A]">Este invernadero todavía no tiene controlador. Registra su ESP32 para continuar.</Texto>
     <label htmlFor="nombre-controlador" className="block text-sm font-semibold">Nombre del ESP32</label>
     <Entrada id="nombre-controlador" ref={entrada} value={nombre} onChange={(evento) => { setNombre(evento.target.value); setError('') }} required disabled={deshabilitado}
       variante="redondeada" placeholder="Ej. ESP32 principal" aria-invalid={!!error} aria-describedby={error ? 'error-controlador' : undefined} />

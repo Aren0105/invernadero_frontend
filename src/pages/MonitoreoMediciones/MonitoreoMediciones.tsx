@@ -22,8 +22,8 @@ export default function MonitoreoMediciones({ id, onVolver, onTiempoReal }: Prop
       <Boton type="button" disabled={cargando} onClick={recargar} className="min-h-11 rounded-xl border border-[#D8DEDA] px-4 text-sm disabled:opacity-50">Actualizar sensores</Boton>
       {cargando ? <Texto role="status" className="py-10 text-center text-sm">Consultando sensores…</Texto> : error ? <div className="space-y-3">
         <Texto role="alert" className="text-sm text-red-700">{error}</Texto><Boton type="button" variante="verde" onClick={recargar}>Reintentar</Boton>
-      </div> : datos?.controladorId === null ? <Texto role="status" className="py-12 text-center text-sm text-[#64766A]">Este invernadero todavía no tiene equipo registrado.</Texto>
-        : datos && !datos.sensores.length ? <Texto role="status" className="py-12 text-center text-sm text-[#64766A]">El equipo todavía no tiene sensores registrados.</Texto>
+      </div> : datos?.controladorId === null ? <Texto role="status" className="py-12 text-center text-sm text-[#64766A]">Este invernadero todavía no tiene controlador registrado.</Texto>
+        : datos && !datos.sensores.length ? <Texto role="status" className="py-12 text-center text-sm text-[#64766A]">El controlador todavía no tiene sensores registrados.</Texto>
           : datos && <HistorialSensores sensores={datos.sensores} onTiempoReal={onTiempoReal} />}
     </main>
   </div>

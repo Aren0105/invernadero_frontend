@@ -21,8 +21,8 @@ export default function MonitoreoTiempoReal({ id, tipo, onVolver }: Props) {
     </header>
     <main className="space-y-5 px-5 py-6">
       {cargando ? <Texto role="status">Consultando sensor…</Texto> : error ? <div className="space-y-3"><Texto role="alert" className="text-sm text-red-700">{error}</Texto><Boton type="button" variante="verde" onClick={recargar}>Reintentar</Boton></div>
-        : datos?.controladorId === null ? <Texto role="status">Este invernadero todavía no tiene equipo registrado.</Texto>
-          : !sensor ? <div className="space-y-3"><Texto role="status">Este tipo de sensor no está registrado en el equipo.</Texto><Boton type="button" onClick={recargar} className="min-h-11 rounded-xl border px-4">Actualizar sensores</Boton></div>
+        : datos?.controladorId === null ? <Texto role="status">Este invernadero todavía no tiene controlador registrado.</Texto>
+          : !sensor ? <div className="space-y-3"><Texto role="status">Este tipo de sensor no está registrado en el controlador.</Texto><Boton type="button" onClick={recargar} className="min-h-11 rounded-xl border px-4">Actualizar sensores</Boton></div>
             : <SesionEnVivo key={sensor.id} invernaderoId={id} sensor={sensor} />}
     </main>
   </div>

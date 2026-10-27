@@ -56,13 +56,13 @@ export default function RegistrarInvernadero({ onVolver, onRegistrado }: Props) 
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />Volver
       </Boton>
       <Titulo className="text-2xl font-bold tracking-tight">Registrar Invernadero</Titulo>
-      <Texto className="mt-2 text-sm text-[#64766A]">Ingresa los datos de tu invernadero. Podrás configurar el equipo después.</Texto>
+      <Texto className="mt-2 text-sm text-[#64766A]">Ingresa los datos de tu invernadero. Podrás configurar el controlador después.</Texto>
       <Texto className="mt-2 text-xs text-[#64766A]">Los campos con * son obligatorios.</Texto>
     </header>
     {creado ? <section className="space-y-4 rounded-2xl border border-[#D8E1DA] bg-white p-5">
       <Titulo nivel={2} className="text-xl font-semibold">Invernadero creado</Titulo>
       <Texto role="status" className="text-sm text-[#64766A]">Se guardó correctamente. Desde su detalle puedes configurar el ESP32 y sus sensores ahora o más adelante.</Texto>
-      <Boton type="button" variante="verde" onClick={() => onRegistrado(creado)}>Ver invernadero y configurar equipo</Boton>
+      <Boton type="button" variante="verde" onClick={() => onRegistrado(creado)}>Ver invernadero y configurar controlador</Boton>
       <Boton type="button" className="min-h-11 w-full text-sm underline" onClick={onVolver}>Volver a Mis invernaderos</Boton>
     </section> : <>
       <FormularioRegistro etiquetaEnviar="REGISTRAR INVERNADERO" valores={valores} errores={errores} ocupado={ocupado} bloqueado={bloqueado} onEnviar={(evento) => { void enviar(evento) }}

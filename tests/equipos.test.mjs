@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createServer } from 'vite'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 
 const json = (valor, status = 200) => Response.json(valor, { status })
 const fecha = '2026-01-01T00:00:00.000Z'
@@ -140,6 +142,36 @@ test('Registro y aprovisionamiento con el contrato real de la API', async (t) =>
     await assert.rejects(async () => servicio.agregarSensor('7', 'HumedadSuelo', ' '.repeat(5)))
   })
 
+  await t.test('asigna °C a temperatura y % a suelo/nivel sin pedir la unidad', async () => {
+    const servicio = crearServicioEquipos(async (_, opciones) => json(sensor('9', JSON.parse(opciones.body)), 201))
+    for (const [tipo, unidad] of [['Temperatura', '°C'], ['NivelAgua', '%'], ['HumedadSuelo', '%'], ['HumedadAmbiental', '%']]) {
+      assert.equal((await servicio.agregarSensor('7', tipo)).unidad, unidad)
+    }
+  })
+
+  await t.test('edita el registro correcto y elimina sin enviar cuerpos o borrar historial', async () => {
+    const llamadas = []
+    const servicio = crearServicioEquipos(async (ruta, opciones) => {
+      llamadas.push([ruta, opciones])
+      if (opciones.method === 'DELETE') return new Response(null, { status: 204 })
+      return json(sensor('9', { type: 'Temperatura', unit: '°C' }))
+    })
+    assert.equal((await servicio.editarSensor('7', '9', 'Temperatura')).tipo, 'Temperatura')
+    assert.deepEqual(JSON.parse(llamadas[0][1].body), { type: 'Temperatura', unit: '°C' })
+    await servicio.eliminarSensor('7', '9')
+    assert.equal(llamadas[1][0], '/controllers/7/sensors/9')
+    assert.equal(llamadas[1][1].method, 'DELETE')
+    assert.equal(llamadas[1][1].body, undefined)
+    await assert.rejects(crearServicioEquipos(async () => json(sensor('10', { type: 'Temperatura', unit: '°C' }))).editarSensor('7', '9', 'Temperatura'))
+  })
+
+  await t.test('muestra restricciones conocidas y oculta mensajes internos del servidor', async () => {
+    const mensaje = 'El sensor tiene mediciones. No se puede eliminar ni cambiar su tipo o unidad para conservar el historial.'
+    const servicio = crearServicioEquipos(async () => json({ message: mensaje }, 409))
+    await assert.rejects(servicio.eliminarSensor('7', '9'), (error) => error.message === mensaje && error.resultado === 'rechazada')
+    await assert.rejects(crearServicioEquipos(async () => json({ message: 'SQL secreto' }, 409)).editarSensor('7', '9', 'Temperatura'), (error) => !error.message.includes('SQL'))
+  })
+
   await t.test('no muestra sensores de otro equipo ni tipos duplicados', async () => {
     await assert.rejects(crearServicioEquipos(async () => json([sensor('9', { controllerId: '8' })])).sensores('7'))
     await assert.rejects(crearServicioEquipos(async () => json([sensor('9'), sensor('10')])).sensores('7'))
@@ -205,4 +237,32 @@ test('Registro y aprovisionamiento con el contrato real de la API', async (t) =>
     assert.equal(credencialVigente({ ...base, revocadaEn: fecha }, ahora), false)
     assert.equal(credencialVigente({ ...base, venceEn: '2027-01-01T00:00:00Z' }, ahora), true)
   })
+  await t.test('el formulario muestra unidad fija y acciones en cada sensor sin entrada de unidad', async () => {
+    const { default: Formulario } = await servidor.ssrLoadModule('/src/pages/ConfigurarEquipo/components/FormularioSensor.tsx')
+    const { default: Panel } = await servidor.ssrLoadModule('/src/pages/ConfigurarEquipo/components/PanelSensores.tsx')
+    const html = renderToStaticMarkup(createElement(Formulario, { tipos: ['Temperatura'], id: 'sensor', etiqueta: 'Agregar', deshabilitado: false, onGuardar: async () => true }))
+    assert.ok(html.includes('°C'))
+    assert.ok(!html.includes('<input'))
+    assert.ok(!html.includes('Humedad ambiental'))
+    const panel = renderToStaticMarkup(createElement(Panel, { sensores: [{ id: '9', controladorId: '7', tipo: 'Temperatura', unidad: '°C', conexion: 'Desconectado' }], deshabilitado: false, controladorActivo: false, onAgregar: async () => true, onEditar: async () => true, onEliminar: async () => true }))
+    assert.ok(panel.includes('Editar Temperatura'))
+    assert.ok(panel.includes('Eliminar Temperatura'))
+    assert.ok(!panel.includes('value="Temperatura"'))
+  })
+
+  await t.test('ofrece los cuatro tipos y conserva humedad ambiental al agregar temperatura', async () => {
+    const { tiposSensorRegistrables, nombresSensor } = await servidor.ssrLoadModule('/src/types/equipos.ts')
+    const { default: Panel } = await servidor.ssrLoadModule('/src/pages/ConfigurarEquipo/components/PanelSensores.tsx')
+    assert.deepEqual([...tiposSensorRegistrables].sort(), ['HumedadAmbiental', 'HumedadSuelo', 'NivelAgua', 'Temperatura'])
+    assert.equal(nombresSensor.HumedadAmbiental, 'Humedad ambiental')
+    const existentes = [{ id: '7', controladorId: '7', tipo: 'HumedadAmbiental', unidad: '%', conexion: 'Desconectado' }]
+    const props = { sensores: existentes, deshabilitado: false, controladorActivo: false, onAgregar: async () => true, onEditar: async () => true, onEliminar: async () => true }
+    const html = renderToStaticMarkup(createElement(Panel, props))
+    assert.ok(html.includes('value="Temperatura"'))
+    assert.ok(html.includes('Editar Humedad ambiental'))
+    assert.ok(!html.includes('Registro anterior'))
+    const completos = tiposSensorRegistrables.map((tipo, index) => ({ ...existentes[0], id: String(index + 1), tipo, unidad: tipo === 'Temperatura' ? '°C' : '%' }))
+    assert.ok(renderToStaticMarkup(createElement(Panel, { ...props, sensores: completos })).includes('los cuatro tipos disponibles'))
+  })
+
 })
