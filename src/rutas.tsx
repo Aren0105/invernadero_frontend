@@ -14,6 +14,7 @@ import { tiposSensor, type TipoSensor } from './types/equipos'
 import DetalleInvernadero from './pages/DetalleInvernadero'
 import MonitoreoMediciones from './pages/MonitoreoMediciones'
 import MonitoreoTiempoReal from './pages/MonitoreoTiempoReal'
+import ControlRiego from './pages/ControlRiego'
 
 /** Redirige al acceso y conserva la URL solicitada cuando no hay sesión vigente. */
 export function RutaProtegida() {
@@ -74,7 +75,7 @@ export function RutaDetalle() {
   const ubicacion = useLocation()
   return esIdInvernadero(invernaderoId)
     ? <DetalleInvernadero key={invernaderoId} id={invernaderoId} recienCreado={ubicacion.state?.invernaderoCreado === invernaderoId}
-      onPerfil={() => navegar('/perfil')} onVolver={() => navegar('/invernaderos')} onMediciones={() => navegar('mediciones')} onConfigurar={() => navegar('equipo')} onEditar={() => navegar('editar')} />
+      onPerfil={() => navegar('/perfil')} onVolver={() => navegar('/invernaderos')} onMediciones={() => navegar('mediciones')} onConfigurar={() => navegar('equipo')} onControlRiego={() => navegar('riego')} />
     : <NoEncontrada />
 }
 
@@ -104,6 +105,16 @@ export function RutaTiempoReal() {
   if (!tiposSensor.includes(tipo as TipoSensor)) return <Navigate to={mediciones} replace />
   return <MonitoreoTiempoReal key={`${invernaderoId}:${tipo}`} id={invernaderoId} tipo={tipo as TipoSensor} onVolver={() => navegar(mediciones)} />
 }
+
+/**Agregado de Luis */
+export function RutaControlRiego() {
+  const navegar = useNavigate()
+  const { invernaderoId } = useParams()
+  return esIdInvernadero(invernaderoId)
+    ? <ControlRiego key={invernaderoId} id={invernaderoId} onVolver={() => navegar(`/invernaderos/${encodeURIComponent(invernaderoId)}`)} />
+    : <NoEncontrada />
+}
+
 
 export function RutaNoEncontrada() { return <NoEncontrada /> }
 

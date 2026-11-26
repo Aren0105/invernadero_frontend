@@ -10,7 +10,7 @@ import { datosCrearInvernadero, validarInvernadero, type ErroresInvernadero, typ
 import FormularioRegistro from '../../components/invernaderos/FormularioInvernadero'
 
 type Props = { onVolver: () => void; onRegistrado: (id: string) => void }
-const inicial: FormularioInvernadero = { nombre: '', ubicacion: '', largo: '', ancho: '', alto: '', descripcion: '' }
+const inicial: FormularioInvernadero = { nombre: '', ubicacion: '', cultivo: '', dimension: '', descripcion: '' }
 
 /** Crea el invernadero por separado del equipo; una respuesta incierta obliga a revisar la lista antes de repetir el alta. */
 export default function RegistrarInvernadero({ onVolver, onRegistrado }: Props) {
@@ -49,26 +49,27 @@ export default function RegistrarInvernadero({ onVolver, onRegistrado }: Props) 
     } finally { enviando.current = false; setOcupado(false) }
   }
 
-  return <main className="min-h-dvh bg-[#F5F8F5] px-5 pb-8 pt-3 text-[#233D32]">
+  return <div className="min-h-dvh bg-[#F5F8F5] text-[#233D32]">
     <ProteccionSalida pendiente={ocupado} />
-    <header className="mb-5">
-      <Boton type="button" disabled={ocupado} onClick={onVolver} className="mb-1 inline-flex min-h-11 items-center gap-2 rounded-lg pr-3 text-sm focus-visible:outline-2 focus-visible:outline-[#47885C]">
-        <ArrowLeft className="h-4 w-4" aria-hidden="true" />Volver
+    <header className="flex items-center gap-2 bg-[#EEF1EE] px-3 py-2">
+      <Boton type="button" disabled={ocupado} onClick={onVolver} aria-label="Volver a Mis invernaderos" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl focus-visible:outline-2 focus-visible:outline-[#47885C]">
+        <ArrowLeft className="h-5 w-5" aria-hidden="true" />
       </Boton>
-      <Titulo className="text-2xl font-bold tracking-tight">Registrar Invernadero</Titulo>
-      <Texto className="mt-2 text-sm text-[#64766A]">Ingresa los datos de tu invernadero. Podrás configurar el controlador después.</Texto>
-      <Texto className="mt-2 text-xs text-[#64766A]">Los campos con * son obligatorios.</Texto>
+      <Titulo className="text-lg font-semibold">Registrar invernadero</Titulo>
     </header>
-    {creado ? <section className="space-y-4 rounded-2xl border border-[#D8E1DA] bg-white p-5">
-      <Titulo nivel={2} className="text-xl font-semibold">Invernadero creado</Titulo>
-      <Texto role="status" className="text-sm text-[#64766A]">Se guardó correctamente. Desde su detalle puedes configurar el ESP32 y sus sensores ahora o más adelante.</Texto>
-      <Boton type="button" variante="verde" onClick={() => onRegistrado(creado)}>Ver invernadero y configurar controlador</Boton>
-      <Boton type="button" className="min-h-11 w-full text-sm underline" onClick={onVolver}>Volver a Mis invernaderos</Boton>
-    </section> : <>
-      <FormularioRegistro etiquetaEnviar="REGISTRAR INVERNADERO" valores={valores} errores={errores} ocupado={ocupado} bloqueado={bloqueado} onEnviar={(evento) => { void enviar(evento) }}
-        onCambiar={(campo, valor) => { setValores((actual) => ({ ...actual, [campo]: valor })); setErrores((actual) => ({ ...actual, [campo]: '' })); setError('') }} />
-      {error && <Texto role="alert" className="mt-4 text-sm text-red-700">{error}</Texto>}
-      {bloqueado && <Boton type="button" variante="verde" className="mt-4" onClick={onVolver}>Revisar Mis invernaderos</Boton>}
-    </>}
-  </main>
+    <main className="px-5 pb-8 pt-4">
+      {creado ? <section className="space-y-4 rounded-2xl border border-[#D8E1DA] bg-white p-5">
+        <Titulo nivel={2} className="text-xl font-semibold">Invernadero creado</Titulo>
+        <Texto role="status" className="text-sm text-[#64766A]">Se guardó correctamente. Desde su detalle puedes configurar el ESP32 y sus sensores ahora o más adelante.</Texto>
+        <Boton type="button" variante="verde" onClick={() => onRegistrado(creado)}>Ver invernadero y configurar controlador</Boton>
+        <Boton type="button" className="min-h-11 w-full text-sm underline" onClick={onVolver}>Volver a Mis invernaderos</Boton>
+      </section> : <>
+        <Texto className="mb-4 text-sm text-[#64766A]">Ingresa los datos de tu invernadero</Texto>
+        <FormularioRegistro etiquetaEnviar="REGISTRAR INVERNADERO" valores={valores} errores={errores} ocupado={ocupado} bloqueado={bloqueado} onEnviar={(evento) => { void enviar(evento) }}
+          onCambiar={(campo, valor) => { setValores((actual) => ({ ...actual, [campo]: valor })); setErrores((actual) => ({ ...actual, [campo]: '' })); setError('') }} />
+        {error && <Texto role="alert" className="mt-4 text-sm text-red-700">{error}</Texto>}
+        {bloqueado && <Boton type="button" variante="verde" className="mt-4" onClick={onVolver}>Revisar Mis invernaderos</Boton>}
+      </>}
+    </main>
+  </div>
 }

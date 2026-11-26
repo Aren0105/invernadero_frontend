@@ -8,9 +8,8 @@ export type Invernadero = {
   estado: EstadoInvernadero
   rol: 'ADMIN' | 'OPERATOR'
   ubicacion: string
-  largo: string | null
-  ancho: string | null
-  alto: string | null
+  cultivo: string | null
+  area: string | null
   modoOperacion: 'Manual' | 'Automatico' | null
 }
 

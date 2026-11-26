@@ -106,24 +106,24 @@ test('Consulta y búsqueda de invernaderos', async (t) => {
   })
 
   await t.test('precarga dimensiones y convierte opcionales vacíos en un borrado explícito', async () => {
-    const servicio = crearServicioInvernaderos(async () => Response.json(registro('7', { length: '12.25', width: '4.00', height: null, description: 'Original' })))
+    const servicio = crearServicioInvernaderos(async () => Response.json(registro('7', { crop: 'Tomate', area: '50.00', description: 'Original' })))
     const datos = formularioDesdeInvernadero(await servicio.consultar('7'))
-    assert.deepEqual(datos, { nombre: 'Invernadero 7', ubicacion: 'Lima', largo: '12.25', ancho: '4.00', alto: '', descripcion: 'Original' })
-    assert.deepEqual(datosActualizarInvernadero({ ...datos, descripcion: '' }), { name: 'Invernadero 7', location: 'Lima', length: 12.25, width: 4, height: null, description: null })
+    assert.deepEqual(datos, { nombre: 'Invernadero 7', ubicacion: 'Lima', cultivo: 'Tomate', dimension: '50.00', descripcion: 'Original' })
+    assert.deepEqual(datosActualizarInvernadero({ ...datos, descripcion: '' }), { name: 'Invernadero 7', location: 'Lima', crop: 'Tomate', area: 50, description: null })
   })
 
   await t.test('edita campos generales sin transmitir estado, roles, equipo o propietario', async () => {
-    const cuerpo = { name: 'Nuevo', location: 'Lima', length: 10, width: 5, height: null, description: null, status: 'Activo', role: 'OPERATOR', ownerId: 'ajeno' }
+    const cuerpo = { name: 'Nuevo', location: 'Lima', crop: 'Lechuga', area: 20, description: null, status: 'Activo', role: 'OPERATOR', ownerId: 'ajeno' }
     const servicio = crearServicioInvernaderos(async (ruta, opciones) => {
       assert.equal(ruta, '/greenhouses/7')
       assert.equal(opciones.method, 'PATCH')
-      assert.deepEqual(JSON.parse(opciones.body), { name: 'Nuevo', location: 'Lima', length: 10, width: 5, height: null, description: null })
-      return Response.json(registro('7', { name: 'Nuevo', status: 'Desactivado', height: null, description: null }))
+      assert.deepEqual(JSON.parse(opciones.body), { name: 'Nuevo', location: 'Lima', crop: 'Lechuga', area: 20, description: null })
+      return Response.json(registro('7', { name: 'Nuevo', status: 'Desactivado', crop: null, description: null }))
     })
     const resultado = await servicio.actualizar('7', cuerpo)
     assert.equal(resultado.nombre, 'Nuevo')
     assert.equal(resultado.estado, 'Desactivado')
-    assert.equal(resultado.alto, null)
+    assert.equal(resultado.cultivo, null)
     assert.equal(resultado.descripcion, null)
   })
 
