@@ -7,7 +7,13 @@ const navegacion = [
   { nombre: 'Perfil', icono: User },
 ]
 
-export default function MisInvernaderos({ onRegistrar }: { onRegistrar: () => void }) {
+type Props = {
+  onRegistrar: () => void
+  onAlertas: () => void
+  onConfiguracionAlertas: () => void
+}
+
+export default function MisInvernaderos({ onRegistrar, onAlertas, onConfiguracionAlertas }: Props) {
   return (
     <div className="flex min-h-dvh flex-col bg-[#F5F8F5] text-[#233D32]">
       <header className="bg-[#BCD7A7] px-6 pb-7 pt-8">
@@ -54,7 +60,9 @@ export default function MisInvernaderos({ onRegistrar }: { onRegistrar: () => vo
 
       <nav aria-label="Navegación principal" className="sticky bottom-0 grid grid-cols-4 gap-1 bg-[#BCD7A7] px-2 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         {navegacion.map(({ nombre, icono: Icono }) => (
-          <button key={nombre} type="button" aria-current={nombre === 'Inicio' ? 'page' : undefined} className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-2xl focus-visible:outline-2 focus-visible:outline-[#28583A] ${nombre === 'Inicio' ? 'bg-[#DCEBD1] text-[#28583A]' : 'text-[#486D4D]'}`}>
+          <button key={nombre} type="button" onClick={nombre === 'Notificaciones' ? onAlertas : nombre === 'Configuración' ? onConfiguracionAlertas : undefined}
+            aria-current={nombre === 'Inicio' ? 'page' : undefined} disabled={nombre === 'Perfil'}
+            className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-2xl focus-visible:outline-2 focus-visible:outline-[#28583A] ${nombre === 'Inicio' ? 'bg-[#DCEBD1] text-[#28583A]' : 'text-[#486D4D]'} ${nombre === 'Perfil' ? 'opacity-50' : ''}`}>
             <Icono className="h-6 w-6" aria-hidden="true" />
             <span className="text-[10px]">{nombre}</span>
           </button>

@@ -4,6 +4,8 @@ import { ArrowLeft, ArrowRight, Droplets, Thermometer, Waves, House, Bell, Setti
 type DetalleInvernaderoProps = {
   onVolver: () => void
   onMediciones: () => void
+  onAlertas: () => void
+  onConfiguracionAlertas: () => void
   onControlRiego?: () => void
   onHistorialRiego?: () => void
 }
@@ -15,7 +17,7 @@ const navegacion = [
   { nombre: 'Perfil', icono: User },
 ]
 
-export default function DetalleInvernadero({ onVolver, onMediciones, onControlRiego, onHistorialRiego }: DetalleInvernaderoProps) {
+export default function DetalleInvernadero({ onVolver, onMediciones, onAlertas, onConfiguracionAlertas, onControlRiego, onHistorialRiego }: DetalleInvernaderoProps) {
   const dialogo = useRef<HTMLDialogElement>(null)
   return (
     <div className="flex min-h-dvh flex-col bg-[#F5F8F5] text-[#233D32]">
@@ -104,7 +106,8 @@ export default function DetalleInvernadero({ onVolver, onMediciones, onControlRi
       </dialog>
       <nav aria-label="Navegación principal" className="sticky bottom-0 grid grid-cols-4 gap-1 bg-[#BCD7A7] px-2 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         {navegacion.map(({ nombre, icono: Icono }) => (
-          <button key={nombre} type="button" onClick={nombre === 'Inicio' ? onVolver : undefined} className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-2xl focus-visible:outline-2 focus-visible:outline-[#28583A] ${nombre === 'Inicio' ? 'bg-[#DCEBD1] text-[#28583A]' : 'text-[#486D4D]'}`}>
+          <button key={nombre} type="button" onClick={nombre === 'Inicio' ? onVolver : nombre === 'Notificaciones' ? onAlertas : nombre === 'Configuración' ? onConfiguracionAlertas : undefined}
+            disabled={nombre === 'Perfil'} className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-2xl focus-visible:outline-2 focus-visible:outline-[#28583A] ${nombre === 'Inicio' ? 'bg-[#DCEBD1] text-[#28583A]' : 'text-[#486D4D]'} ${nombre === 'Perfil' ? 'opacity-50' : ''}`}>
             <Icono className="h-6 w-6" aria-hidden="true" />
             <span className="text-[10px]">{nombre}</span>
           </button>

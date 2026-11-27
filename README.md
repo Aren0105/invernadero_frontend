@@ -13,6 +13,7 @@ Esta aplicación permite:
 - consultar el detalle del invernadero
 - ver mediciones
 - ver monitoreo en tiempo real
+- consultar alertas ilustrativas y configurar umbrales locales de ejemplo
 - navegar entre pantallas de forma local dentro de la app
 
 La vista principal se controla desde `src/App.tsx`, donde se alternan pantallas según el estado de sesión y la navegación interna.
@@ -76,6 +77,11 @@ La app trabaja con un estado local de pantalla:
 - `detalle`
 - `mediciones`
 - `tiempoReal`
+- `alertas`
+- `detalleAlerta`
+- `configuracionAlertas`
+
+Las pantallas de alertas usan datos ilustrativos y guardan sus preferencias únicamente en el navegador; todavía no se conectan con lecturas reales del ESP32 ni con el backend.
 
 La navegación se realiza desde `App.tsx` mediante:
 
