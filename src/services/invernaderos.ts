@@ -11,6 +11,7 @@ function leerInvernadero(valor: unknown): Invernadero {
   const datos = valor as Record<string, unknown>
   if (!esIdInvernadero(datos.id) || typeof datos.name !== 'string' || typeof datos.location !== 'string'
     || (datos.description != null && typeof datos.description !== 'string')
+    || (datos.crop != null && typeof datos.crop !== 'string')
     || !['Activo', 'EnMantenimiento', 'Desactivado'].includes(String(datos.status))
     || (datos.role !== 'ADMIN' && datos.role !== 'OPERATOR')) {
     throw new Error('El servidor devolvió un invernadero inválido.')
@@ -19,9 +20,9 @@ function leerInvernadero(valor: unknown): Invernadero {
     id: datos.id, nombre: datos.name, ubicacion: datos.location,
     descripcion: typeof datos.description === 'string' && datos.description.trim() ? datos.description : null,
     estado: datos.status as Invernadero['estado'], rol: datos.role,
-    largo: typeof datos.length === 'string' ? datos.length : null,
-    ancho: typeof datos.width === 'string' ? datos.width : null,
-    alto: typeof datos.height === 'string' ? datos.height : null,
+    // Los invernaderos anteriores al campo pueden no tener cultivo; Postgres entrega numeric como cadena.
+    cultivo: typeof datos.crop === 'string' && datos.crop.trim() ? datos.crop : null,
+    area: typeof datos.area === 'string' ? datos.area : typeof datos.area === 'number' ? String(datos.area) : null,
     modoOperacion: datos.operationMode === 'Manual' || datos.operationMode === 'Automatico' ? datos.operationMode : null,
   }
 }
@@ -31,8 +32,8 @@ export function crearServicioInvernaderos(enviar: Transporte) {
   /** Edita solo los datos generales; los campos desconocidos del consumidor no pasan al cuerpo HTTP. */
   function actualizar(id: string, datos: DatosActualizarInvernadero): Promise<Invernadero> {
     if (!esIdInvernadero(id)) throw new Error('El identificador del invernadero no es válido.')
-    const { name, location, length, width, height, description } = datos
-    return solicitarApi(enviar, `/greenhouses/${id}`, cuerpoJson('PATCH', { name, location, length, width, height, description }), (valor) => {
+    const { name, location, crop, area, description } = datos
+    return solicitarApi(enviar, `/greenhouses/${id}`, cuerpoJson('PATCH', { name, location, crop, area, description }), (valor) => {
       const actualizado = leerInvernadero(valor)
       if (actualizado.id !== id) throw new Error('El servidor devolvió otro invernadero.')
       return actualizado
@@ -50,8 +51,8 @@ export function crearServicioInvernaderos(enviar: Transporte) {
   }
   /** Crea únicamente el invernadero; no reintenta ante pérdidas de conexión para evitar altas duplicadas. */
   function crear(datos: DatosCrearInvernadero): Promise<Invernadero> {
-    const { name, location, length, width, height, description } = datos
-    return solicitarApi(enviar, '/greenhouses', cuerpoJson('POST', { name, location, length, width, height, description }), leerInvernadero)
+    const { name, location, crop, area, description } = datos
+    return solicitarApi(enviar, '/greenhouses', cuerpoJson('POST', { name, location, crop, area, description }), leerInvernadero)
   }
   /** Consulta una pertenencia autorizada; rechaza identificadores inválidos antes de enviar la petición. */
   async function consultar(id: string, signal?: AbortSignal): Promise<Invernadero> {

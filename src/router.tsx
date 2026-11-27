@@ -4,6 +4,7 @@ import {
   RutaProtegida, RutaLogin, RutaRegistroUsuario,
   RutaInvernaderos, RutaRegistroInvernadero, RutaDetalle, RutaMediciones,
   RutaTiempoReal, RutaNoEncontrada, RutaPerfil, RutaEditarInvernadero, RutaConfigurarEquipo,
+  RutaControlRiego,
 } from './rutas'
 
 /** Instancia única del router; las rutas hijas conservan el diseño y la sesión de App. */
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
           { path: 'invernaderos/:invernaderoId', Component: RutaDetalle },
           { path: 'invernaderos/:invernaderoId/mediciones', Component: RutaMediciones },
           { path: 'invernaderos/:invernaderoId/mediciones/tiempo-real/:tipo', Component: RutaTiempoReal },
+          { path: 'invernaderos/:invernaderoId/riego', Component: RutaControlRiego },
         ],
       },
       { path: '*', Component: RutaNoEncontrada },
