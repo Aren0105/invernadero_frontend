@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { createServer } from 'vite'
 import { createElement } from 'react'
@@ -263,6 +264,54 @@ test('Registro y aprovisionamiento con el contrato real de la API', async (t) =>
     assert.ok(!html.includes('Registro anterior'))
     const completos = tiposSensorRegistrables.map((tipo, index) => ({ ...existentes[0], id: String(index + 1), tipo, unidad: tipo === 'Temperatura' ? '°C' : '%' }))
     assert.ok(renderToStaticMarkup(createElement(Panel, { ...props, sensores: completos })).includes('los cuatro tipos disponibles'))
+  })
+
+  await t.test('las secciones divididas mantienen accesos directos y pantallas separadas', async () => {
+    const { default: SeccionEquipo } = await servidor.ssrLoadModule('/src/pages/DetalleInvernadero/components/SeccionEquipo.tsx')
+    const { default: FormularioControlador } = await servidor.ssrLoadModule('/src/pages/ConfigurarEquipo/components/FormularioControlador.tsx')
+    const { default: PanelCredenciales } = await servidor.ssrLoadModule('/src/pages/ConfigurarEquipo/components/PanelCredenciales.tsx')
+    const { default: PanelEstadoControlador } = await servidor.ssrLoadModule('/src/pages/ConfigurarEquipo/components/PanelEstadoControlador.tsx')
+    const { default: GuiaInstalacion } = await servidor.ssrLoadModule('/src/pages/ConfigurarEquipo/components/GuiaInstalacion.tsx')
+    const { RutaConfigurarEquipo, RutaGestionSensores, RutaConexionControlador } = await servidor.ssrLoadModule('/src/rutas.tsx')
+
+    // Verifica que la sección en DetalleInvernadero muestra "Asociar controlador" cuando no hay equipo
+    // y los tres accesos directos cuando el controlador ya está asociado.
+    const sinEquipo = renderToStaticMarkup(createElement(SeccionEquipo, { equipo: null, error: '', onConfigurar: () => {} }))
+    assert.ok(sinEquipo.includes('Asociar controlador'))
+    const conEquipo = renderToStaticMarkup(createElement(SeccionEquipo, {
+      equipo: { id: '7', invernaderoId: '3', nombre: 'ESP32 Norte', activo: false, conexion: 'Desconectado', creadoEn: fecha, ultimaComunicacion: null },
+      error: '',
+      onConfigurar: () => {},
+      onSensores: () => {},
+      onConexion: () => {},
+    }))
+    assert.ok(conEquipo.includes('Controlador y token'))
+    assert.ok(conEquipo.includes('Sensores'))
+    assert.ok(conEquipo.includes('Probar conexión'))
+
+    // Verifica títulos y textos propios de cada módulo dividido.
+    assert.ok(renderToStaticMarkup(createElement(FormularioControlador, { deshabilitado: false, onRegistrar: async () => true })).includes('Asociar controlador ESP32'))
+    assert.ok(renderToStaticMarkup(createElement(PanelCredenciales, { credenciales: [], secreto: null, deshabilitado: false, ahora: Date.parse(fecha), onEmitir: async () => true, onRevocar: async () => true, onCerrarSecreto: () => {} })).includes('TOKEN DE CONEXIÓN DEL CONTROLADOR'))
+    assert.ok(renderToStaticMarkup(createElement(PanelEstadoControlador, {
+      controlador: { id: '7', invernaderoId: '3', nombre: 'ESP32 Norte', activo: false, conexion: 'Desconectado', creadoEn: fecha, ultimaComunicacion: null },
+      invernaderoDesactivado: false,
+      tieneCredencial: false,
+      deshabilitado: false,
+      onCambiar: async () => true,
+    })).includes('ACTIVACIÓN DEL CONTROLADOR'))
+    assert.ok(renderToStaticMarkup(createElement(GuiaInstalacion, {
+      controlador: { id: '7', invernaderoId: '3', nombre: 'ESP32 Norte', activo: false, conexion: 'Desconectado', creadoEn: fecha, ultimaComunicacion: null },
+      sensores: [],
+    })).includes('DATOS PARA CONFIGURAR LA PLACA'))
+
+    // Verifica que existan los tres adaptadores de ruta y las tres rutas declaradas en router.tsx.
+    assert.equal(typeof RutaConfigurarEquipo, 'function')
+    assert.equal(typeof RutaGestionSensores, 'function')
+    assert.equal(typeof RutaConexionControlador, 'function')
+    const rutasTexto = readFileSync(new URL('../src/router.tsx', import.meta.url), 'utf8')
+    assert.ok(rutasTexto.includes("path: 'invernaderos/:invernaderoId/equipo'"))
+    assert.ok(rutasTexto.includes("path: 'invernaderos/:invernaderoId/equipo/sensores'"))
+    assert.ok(rutasTexto.includes("path: 'invernaderos/:invernaderoId/equipo/conexion'"))
   })
 
 })

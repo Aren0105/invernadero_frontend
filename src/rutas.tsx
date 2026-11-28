@@ -9,6 +9,8 @@ import MisInvernaderos from './pages/MisInvernaderos'
 import RegistrarInvernadero from './pages/RegistrarInvernadero'
 import EditarInvernadero from './pages/EditarInvernadero'
 import ConfigurarEquipo from './pages/ConfigurarEquipo'
+import GestionSensores from './pages/GestionSensores'
+import ConexionControlador from './pages/ConexionControlador'
 import { esIdInvernadero } from './types/invernaderos'
 import { tiposSensor, type TipoSensor } from './types/equipos'
 import DetalleInvernadero from './pages/DetalleInvernadero'
@@ -74,17 +76,72 @@ export function RutaDetalle() {
   const ubicacion = useLocation()
   return esIdInvernadero(invernaderoId)
     ? <DetalleInvernadero key={invernaderoId} id={invernaderoId} recienCreado={ubicacion.state?.invernaderoCreado === invernaderoId}
-      onPerfil={() => navegar('/perfil')} onVolver={() => navegar('/invernaderos')} onMediciones={() => navegar('mediciones')} onConfigurar={() => navegar('equipo')} onEditar={() => navegar('editar')} />
+      onPerfil={() => navegar('/perfil')} onVolver={() => navegar('/invernaderos')} onMediciones={() => navegar('mediciones')}
+      onConfigurar={() => navegar('equipo')} onSensores={() => navegar('equipo/sensores')} onConexion={() => navegar('equipo/conexion')}
+      onEditar={() => navegar('editar')} />
     : <NoEncontrada />
 }
 
-/** La página verifica el rol actual con el servidor antes de consultar recursos administrativos del equipo. */
+/** Construye las rutas de navegación compartidas entre las 3 pantallas de equipo para no repetir URLs. */
+function rutasEquipo(invernaderoId: string) {
+  const base = `/invernaderos/${encodeURIComponent(invernaderoId)}`
+  return {
+    detalle: base,
+    controlador: `${base}/equipo`,
+    sensores: `${base}/equipo/sensores`,
+    conexion: `${base}/equipo/conexion`,
+  }
+}
+
+/** Pantalla 1: Asociar controlador al invernadero y crear su token de conexión. */
 export function RutaConfigurarEquipo() {
   const navegar = useNavigate()
   const { invernaderoId } = useParams()
-  return esIdInvernadero(invernaderoId)
-    ? <ConfigurarEquipo key={invernaderoId} id={invernaderoId} onVolver={() => navegar(`/invernaderos/${encodeURIComponent(invernaderoId)}`)} />
-    : <NoEncontrada />
+  if (!esIdInvernadero(invernaderoId)) return <NoEncontrada />
+  const rutas = rutasEquipo(invernaderoId)
+  return (
+    <ConfigurarEquipo
+      key={invernaderoId}
+      id={invernaderoId}
+      onVolver={() => navegar(rutas.detalle)}
+      onIrSensores={() => navegar(rutas.sensores)}
+      onIrConexion={() => navegar(rutas.conexion)}
+    />
+  )
+}
+
+/** Pantalla 2: Gestión y asociación de sensores al controlador del invernadero. */
+export function RutaGestionSensores() {
+  const navegar = useNavigate()
+  const { invernaderoId } = useParams()
+  if (!esIdInvernadero(invernaderoId)) return <NoEncontrada />
+  const rutas = rutasEquipo(invernaderoId)
+  return (
+    <GestionSensores
+      key={invernaderoId}
+      id={invernaderoId}
+      onVolver={() => navegar(rutas.detalle)}
+      onIrControlador={() => navegar(rutas.controlador)}
+      onIrConexion={() => navegar(rutas.conexion)}
+    />
+  )
+}
+
+/** Pantalla 3: Prueba de conexión, parámetros del firmware y activación del controlador. */
+export function RutaConexionControlador() {
+  const navegar = useNavigate()
+  const { invernaderoId } = useParams()
+  if (!esIdInvernadero(invernaderoId)) return <NoEncontrada />
+  const rutas = rutasEquipo(invernaderoId)
+  return (
+    <ConexionControlador
+      key={invernaderoId}
+      id={invernaderoId}
+      onVolver={() => navegar(rutas.detalle)}
+      onIrControlador={() => navegar(rutas.controlador)}
+      onIrSensores={() => navegar(rutas.sensores)}
+    />
+  )
 }
 
 export function RutaMediciones() {

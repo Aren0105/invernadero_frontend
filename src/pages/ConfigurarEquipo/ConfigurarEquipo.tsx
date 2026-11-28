@@ -1,73 +1,149 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, RefreshCw } from 'lucide-react'
 import Boton from '../../components/ui/Boton'
 import Tarjeta from '../../components/ui/Tarjeta'
-import ProteccionSalida from '../../components/ProteccionSalida'
 import { Texto, Titulo } from '../../components/ui/Tipografia'
 import { servicioEquipos } from '../../services/equipos'
-import { credencialVigente } from '../../types/equipos'
+import { fechaEquipo } from '../../types/equipos'
 import { useConfiguracionEquipo } from './useConfiguracionEquipo'
+import MarcoEquipo from './components/MarcoEquipo'
 import FormularioControlador from './components/FormularioControlador'
-import PanelSensores from './components/PanelSensores'
 import PanelCredenciales from './components/PanelCredenciales'
-import PanelEstadoControlador from './components/PanelEstadoControlador'
-import GuiaInstalacion from './components/GuiaInstalacion'
 
-type Props = { id: string; onVolver: () => void }
+type Props = {
+  /** Identificador del invernadero recibido desde la ruta. */
+  id: string
+  /** Regresa al detalle del invernadero. */
+  onVolver: () => void
+  /** Navega a la pantalla 2 (Gestión y asociación de sensores). */
+  onIrSensores: () => void
+  /** Navega a la pantalla 3 (Probar conexión y activar placa). */
+  onIrConexion: () => void
+}
 
-/** Compone el aprovisionamiento reanudable; cada paso usa recursos ya guardados y acciones explícitas. */
-export default function ConfigurarEquipo({ id, onVolver }: Props) {
+/**
+ * Pantalla 1: Asociar controlador al invernadero y crear su token de conexión.
+ * Se separaron sensores y pruebas de conexión en otras vistas para evitar sobrecargar esta pantalla.
+ */
+export default function ConfigurarEquipo({ id, onVolver, onIrSensores, onIrConexion }: Props) {
+  // Hook compartido que consulta el invernadero, controlador, sensores y credenciales.
   const flujo = useConfiguracionEquipo(id)
+
+  // Reloj local para actualizar visualmente si una credencial sigue vigente o ya venció.
   const [ahora, setAhora] = useState(Date.now)
   useEffect(() => {
     const temporizador = window.setInterval(() => setAhora(Date.now()), 10000)
     return () => window.clearInterval(temporizador)
   }, [])
+
   const { datos, cargando, ocupado, secreto, requiereRevisar } = flujo
+  // Bloqueamos acciones mientras carga, guarda, hay un error, un token visible sin guardar o una operación incierta.
   const bloqueado = ocupado || cargando || !!flujo.error || !!secreto || requiereRevisar
   const controlador = datos?.controlador
 
-  return <main className="min-h-dvh bg-[#F5F8F5] px-5 pb-8 pt-3 text-[#233D32]">
-    <ProteccionSalida pendiente={ocupado} secreto={!!secreto} />
-    <header className="mb-5">
-      <Boton type="button" disabled={ocupado} onClick={onVolver} className="mb-1 inline-flex min-h-11 items-center gap-2 rounded-lg pr-3 text-sm focus-visible:outline-2 focus-visible:outline-[#47885C]">
-        <ArrowLeft className="h-4 w-4" aria-hidden="true" />Volver al invernadero
-      </Boton>
-      <Titulo className="text-2xl font-bold tracking-tight">Configurar controlador</Titulo>
-      {datos && <Texto className="mt-2 break-words text-sm text-[#64766A]">{datos.invernadero.nombre}</Texto>}
-    </header>
-    <div className="mb-5 space-y-3">
-      {cargando && <Texto role="status" className="text-sm">Actualizando controlador…</Texto>}
-      {ocupado && <Texto role="status" className="text-sm">Guardando cambios…</Texto>}
-      {(flujo.error || flujo.errorOperacion) && <Texto role="alert" className="text-sm text-red-700">{flujo.error || flujo.errorOperacion}</Texto>}
-      {flujo.aviso && <Texto role="status" className="text-sm text-[#2F704B]">{flujo.aviso}</Texto>}
-      {(!datos || datos.invernadero.rol === 'ADMIN') && <Boton type="button" disabled={ocupado || cargando} onClick={flujo.actualizar}
-        className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#91A595] px-4 text-sm disabled:opacity-60">
-        <RefreshCw className="h-4 w-4" aria-hidden="true" />Actualizar datos
-      </Boton>}
-    </div>
-    {datos?.invernadero.rol === 'OPERATOR' ? <Tarjeta><Texto role="status" className="text-sm">Solo un administrador de este invernadero puede configurar el controlador.</Texto></Tarjeta> : datos && <div className="space-y-5">
-      {datos.invernadero.estado === 'Desactivado' && <Tarjeta variante="aviso"><Texto role="status">El invernadero está desactivado. Reactívalo desde Editar datos y estado antes de registrar o habilitar su ESP32.</Texto></Tarjeta>}
-      <Tarjeta como="section" className="space-y-4">
-        <Titulo nivel={2} variante="seccion">1. CONTROLADOR ESP32</Titulo>
-        {controlador ? <div className="space-y-2 text-sm">
-          <Texto className="break-words font-semibold">{controlador.nombre}</Texto>
-          <Texto className="text-[#64766A]">ID: {controlador.id}. Este invernadero admite un único ESP32.</Texto>
-        </div> : <FormularioControlador deshabilitado={bloqueado || datos.invernadero.estado === 'Desactivado'} onRegistrar={(nombre) => flujo.ejecutar(() => servicioEquipos.registrar(id, nombre), 'ESP32 registrado. Continúa con sus sensores.')} />}
-      </Tarjeta>
-      {controlador && <>
-        <Tarjeta><PanelSensores sensores={datos.sensores} deshabilitado={bloqueado} controladorActivo={controlador.activo}
-          onAgregar={(tipo) => flujo.ejecutar(() => servicioEquipos.agregarSensor(controlador.id, tipo), 'Sensor registrado. Configura su identificador en la placa.')}
-          onEditar={(sensorId, tipo) => flujo.ejecutar(() => servicioEquipos.editarSensor(controlador.id, sensorId, tipo), 'Sensor actualizado. Revisa su tipo y unidad en el firmware antes de habilitar el controlador.')}
-          onEliminar={(sensorId) => flujo.ejecutar(() => servicioEquipos.eliminarSensor(controlador.id, sensorId), 'Sensor eliminado. Retira su identificador de la configuración de la placa.')} /></Tarjeta>
-        <Tarjeta><PanelCredenciales key={controlador.id} credenciales={datos.credenciales} secreto={secreto} deshabilitado={bloqueado} ahora={ahora}
-          onEmitir={(venceEn, reemplazar) => flujo.ejecutar(() => servicioEquipos.emitir(controlador.id, venceEn, reemplazar), 'Credencial emitida. Guárdala antes de continuar.', flujo.setSecreto)}
-          onRevocar={(credencialId) => flujo.ejecutar(() => servicioEquipos.revocar(controlador.id, credencialId), 'Credencial revocada.')}
-          onCerrarSecreto={() => flujo.setSecreto(null)} /></Tarjeta>
-        <Tarjeta><GuiaInstalacion controlador={controlador} sensores={datos.sensores} /></Tarjeta>
-        <Tarjeta><PanelEstadoControlador controlador={controlador} invernaderoDesactivado={datos.invernadero.estado === 'Desactivado'} tieneCredencial={datos.credenciales.some((clave) => credencialVigente(clave, ahora))}
-          deshabilitado={bloqueado} onCambiar={(activo) => flujo.ejecutar(() => servicioEquipos.activar(controlador.id, activo), activo ? 'ESP32 habilitado. Comprueba su última comunicación después de conectar la placa.' : 'Comunicaciones del ESP32 bloqueadas.')} /></Tarjeta>
-      </>}
-    </div>}
-  </main>
+  return (
+    <MarcoEquipo
+      titulo="Asociar controlador"
+      subtitulo="Registra el ESP32 del invernadero y genera el token necesario para su conexión."
+      pasoActivo="controlador"
+      invernaderoNombre={datos?.invernadero.nombre}
+      rol={datos?.invernadero.rol}
+      estadoInvernadero={datos?.invernadero.estado}
+      cargando={cargando}
+      ocupado={ocupado}
+      error={flujo.error}
+      errorOperacion={flujo.errorOperacion}
+      aviso={flujo.aviso}
+      secretoVisible={!!secreto}
+      onActualizar={flujo.actualizar}
+      onVolver={onVolver}
+      onIrControlador={() => {}}
+      onIrSensores={onIrSensores}
+      onIrConexion={onIrConexion}
+    >
+      {datos && (
+        <>
+          {/* Bloque 1: Asociar el controlador ESP32 al invernadero o mostrar el que ya está asociado */}
+          <Tarjeta como="section" className="space-y-3" aria-labelledby="titulo-controlador">
+            <Titulo nivel={2} id="titulo-controlador" variante="seccion">
+              CONTROLADOR ESP32 DEL INVERNADERO
+            </Titulo>
+            {controlador ? (
+              <div className="space-y-1.5 text-sm">
+                <Texto className="break-words font-semibold">{controlador.nombre}</Texto>
+                <Texto className="text-[#64766A]">
+                  ID: {controlador.id} · Este invernadero admite un único controlador ESP32.
+                </Texto>
+                <Texto className="text-xs text-[#64766A]">
+                  Estado: {controlador.activo ? 'Habilitado' : 'Bloqueado'} · Conexión: {controlador.conexion} · Último contacto:{' '}
+                  {fechaEquipo(controlador.ultimaComunicacion)}
+                </Texto>
+              </div>
+            ) : (
+              <FormularioControlador
+                deshabilitado={bloqueado || datos.invernadero.estado === 'Desactivado'}
+                onRegistrar={(nombre) =>
+                  flujo.ejecutar(
+                    () => servicioEquipos.registrar(id, nombre),
+                    'Controlador asociado al invernadero. Ahora genera su token de conexión.',
+                  )
+                }
+              />
+            )}
+          </Tarjeta>
+
+          {/* Bloque 2: Una vez asociado el controlador, habilitamos la emisión y manejo del token */}
+          {controlador && (
+            <>
+              <Tarjeta>
+                <PanelCredenciales
+                  key={controlador.id}
+                  credenciales={datos.credenciales}
+                  secreto={secreto}
+                  deshabilitado={bloqueado}
+                  ahora={ahora}
+                  onEmitir={(venceEn, reemplazar) =>
+                    flujo.ejecutar(
+                      () => servicioEquipos.emitir(controlador.id, venceEn, reemplazar),
+                      'Token emitido. Cópialo y guárdalo antes de ocultarlo.',
+                      flujo.setSecreto,
+                    )
+                  }
+                  onRevocar={(credencialId) =>
+                    flujo.ejecutar(
+                      () => servicioEquipos.revocar(controlador.id, credencialId),
+                      'Token revocado.',
+                    )
+                  }
+                  onCerrarSecreto={() => flujo.setSecreto(null)}
+                />
+              </Tarjeta>
+
+              {/* Bloque 3: Accesos directos a las otras dos pantallas para continuar el flujo */}
+              <Tarjeta como="section" variante="verde" className="space-y-3" aria-labelledby="titulo-siguientes-pasos">
+                <Titulo nivel={2} id="titulo-siguientes-pasos" variante="seccion">
+                  SIGUIENTES PASOS
+                </Titulo>
+                <Texto className="text-sm">
+                  Sensores asociados actualmente: <strong>{datos.sensores.length}</strong>. Adminístralos y luego comprueba la conexión física.
+                </Texto>
+                <div className="flex flex-col gap-2">
+                  <Boton type="button" variante="verde" disabled={ocupado} onClick={onIrSensores}>
+                    Ir a gestión de sensores
+                  </Boton>
+                  <Boton
+                    type="button"
+                    disabled={ocupado}
+                    onClick={onIrConexion}
+                    className="min-h-11 w-full rounded-full border border-[#91A595] bg-white px-4 py-2 text-sm font-semibold text-[#233D32] disabled:opacity-60"
+                  >
+                    Ir a probar conexión y activar
+                  </Boton>
+                </div>
+              </Tarjeta>
+            </>
+          )}
+        </>
+      )}
+    </MarcoEquipo>
+  )
 }

@@ -14,6 +14,8 @@ type DetalleInvernaderoProps = {
   onPerfil: () => void
   onMediciones: () => void
   onConfigurar: () => void
+  onSensores?: () => void
+  onConexion?: () => void
   onEditar: () => void
   recienCreado?: boolean
   onControlRiego?: () => void
@@ -21,7 +23,19 @@ type DetalleInvernaderoProps = {
 }
 
 /** Consulta el registro real y permite retomar el equipo; las mediciones y el riego conservan sus integraciones independientes. */
-export default function DetalleInvernadero({ id, onVolver, onPerfil, onMediciones, onConfigurar, onEditar, recienCreado, onControlRiego, onHistorialRiego }: DetalleInvernaderoProps) {
+export default function DetalleInvernadero({
+  id,
+  onVolver,
+  onPerfil,
+  onMediciones,
+  onConfigurar,
+  onSensores,
+  onConexion,
+  onEditar,
+  recienCreado,
+  onControlRiego,
+  onHistorialRiego,
+}: DetalleInvernaderoProps) {
   const { datos, error, cargando, recargar } = useDetalleInvernadero(id)
   const invernadero = datos?.invernadero
   const area = invernadero?.largo && invernadero.ancho ? Number(invernadero.largo) * Number(invernadero.ancho) : null
@@ -45,7 +59,16 @@ export default function DetalleInvernadero({ id, onVolver, onPerfil, onMedicione
         {error && <div><Texto role="alert" className="text-sm text-red-700">{error}</Texto><Boton type="button" onClick={recargar} className="mt-3 min-h-11 rounded-xl border px-4">Reintentar</Boton></div>}
         {datos && <>
         {recienCreado && <Tarjeta variante="aviso"><Texto role="status">Invernadero creado. Puedes configurar su controlador ahora o más adelante.</Texto></Tarjeta>}
-        {invernadero?.rol === 'ADMIN' && <SeccionEquipo equipo={datos.equipo} error={datos.errorEquipo} onConfigurar={onConfigurar} />}
+        {/* Solo los administradores ven los accesos para asociar controlador, tokens, sensores y conexión */}
+        {invernadero?.rol === 'ADMIN' && (
+          <SeccionEquipo
+            equipo={datos.equipo}
+            error={datos.errorEquipo}
+            onConfigurar={onConfigurar}
+            onSensores={onSensores}
+            onConexion={onConexion}
+          />
+        )}
         <section aria-labelledby="estado-actual">
           <Titulo nivel={2} id="estado-actual" variante="seccion">ESTADO ACTUAL</Titulo>
           <div className="grid grid-cols-2 gap-3">

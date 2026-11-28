@@ -60,7 +60,9 @@ Se utiliza una instancia de `createBrowserRouter` creada fuera del renderizado d
 | `/invernaderos/nuevo` | Registrar invernadero | Sesión vigente |
 | `/invernaderos/:invernaderoId/editar` | Edición y desactivación/reactivación | ADMIN; OPERATOR solo puede consultar |
 | `/invernaderos/:invernaderoId` | Detalle | Sesión vigente |
-| `/invernaderos/:invernaderoId/equipo` | Configurar equipo | ADMIN de ese invernadero |
+| `/invernaderos/:invernaderoId/equipo` | Asociar controlador y generar token | ADMIN de ese invernadero |
+| `/invernaderos/:invernaderoId/equipo/sensores` | Gestión y asociación de sensores | ADMIN de ese invernadero |
+| `/invernaderos/:invernaderoId/equipo/conexion` | Prueba de conexión, datos de placa y activación | ADMIN de ese invernadero |
 | `/invernaderos/:invernaderoId/mediciones` | Mediciones | Sesión vigente |
 | `/invernaderos/:invernaderoId/mediciones/tiempo-real/:tipo` | Tiempo real | Sesión vigente |
 | Cualquier otra URL | Página no encontrada | Público |
