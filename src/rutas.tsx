@@ -14,6 +14,7 @@ import { tiposSensor, type TipoSensor } from './types/equipos'
 import DetalleInvernadero from './pages/DetalleInvernadero'
 import MonitoreoMediciones from './pages/MonitoreoMediciones'
 import MonitoreoTiempoReal from './pages/MonitoreoTiempoReal'
+import HistorialRiego from './pages/HistorialRiego'
 
 /** Redirige al acceso y conserva la URL solicitada cuando no hay sesión vigente. */
 export function RutaProtegida() {
@@ -72,9 +73,19 @@ export function RutaDetalle() {
   const navegar = useNavigate()
   const { invernaderoId } = useParams()
   const ubicacion = useLocation()
+
   return esIdInvernadero(invernaderoId)
-    ? <DetalleInvernadero key={invernaderoId} id={invernaderoId} recienCreado={ubicacion.state?.invernaderoCreado === invernaderoId}
-      onPerfil={() => navegar('/perfil')} onVolver={() => navegar('/invernaderos')} onMediciones={() => navegar('mediciones')} onConfigurar={() => navegar('equipo')} onEditar={() => navegar('editar')} />
+    ? <DetalleInvernadero
+        key={invernaderoId}
+        id={invernaderoId}
+        recienCreado={ubicacion.state?.invernaderoCreado === invernaderoId}
+        onPerfil={() => navegar('/perfil')}
+        onVolver={() => navegar('/invernaderos')}
+        onMediciones={() => navegar('mediciones')}
+        onConfigurar={() => navegar('equipo')}
+        onEditar={() => navegar('editar')}
+        onHistorialRiego={() => navegar('historial-riego')}
+      />
     : <NoEncontrada />
 }
 
@@ -104,7 +115,24 @@ export function RutaTiempoReal() {
   if (!tiposSensor.includes(tipo as TipoSensor)) return <Navigate to={mediciones} replace />
   return <MonitoreoTiempoReal key={`${invernaderoId}:${tipo}`} id={invernaderoId} tipo={tipo as TipoSensor} onVolver={() => navegar(mediciones)} />
 }
+export function RutaHistorialRiego() {
+  const navegar = useNavigate()
+  const { invernaderoId } = useParams()
 
+  if (!esIdInvernadero(invernaderoId)) {
+    return <NoEncontrada />
+  }
+
+  return (
+    <HistorialRiego
+      key={invernaderoId}
+      id={invernaderoId}
+      onVolver={() =>
+        navegar(`/invernaderos/${encodeURIComponent(invernaderoId)}`)
+      }
+    />
+  )
+}
 export function RutaNoEncontrada() { return <NoEncontrada /> }
 
 /** Perfil protegido con datos de la sesión; el cierre solo navega al acceso tras revocar la cookie. */

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Radio, RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import Boton from '../../../components/ui/Boton'
 import Seleccion from '../../../components/ui/Seleccion'
 import { Texto } from '../../../components/ui/Tipografia'
@@ -11,7 +11,7 @@ import ConsultaHistorial from './ConsultaHistorial'
 type Props = { sensores: Sensor[]; onTiempoReal: (tipo: TipoSensor) => void }
 
 /** Controla filtros y ventana fija; cambia únicamente la página al recorrer el mismo intervalo de fechas. */
-export default function HistorialSensores({ sensores, onTiempoReal }: Props) {
+export default function HistorialSensores({ sensores }: Props) {
   const [seleccion, setSeleccion] = useState(() => ({
     sensorId: (sensores.find((sensor) => sensor.tipo === 'HumedadSuelo') ?? sensores[0]).id,
     periodo: 'hoy' as PeriodoHistorial, agrupacion: 'none' as AgrupacionHistorial,
@@ -26,30 +26,29 @@ export default function HistorialSensores({ sensores, onTiempoReal }: Props) {
         {sensores.map((item) => <option key={item.id} value={item.id}>{nombresSensor[item.tipo]} ({item.unidad})</option>)}
       </Seleccion>
     </div>
-    <div role="group" aria-label="Período de consulta" className="flex rounded-full border border-[#D8DEDA] p-1">
+    <div role="group" aria-label="Período de consulta" className="flex gap-1 rounded-full border border-[#D8DEDA] bg-white p-1 shadow-sm">
       {(['hoy', 'semana'] as const).map((periodo) => <Boton key={periodo} type="button" variante="segmento" aria-pressed={seleccion.periodo === periodo}
         onClick={() => setSeleccion((actual) => ({ ...actual, periodo, rango: rangoHistorial(periodo), agrupacion: periodo === 'semana' ? 'hour' : 'none', pagina: 1, revision: actual.revision + 1 }))}
-        className={seleccion.periodo === periodo ? 'bg-[#EDEEEE] font-medium' : 'text-[#68756D]'}>{periodo === 'hoy' ? 'Hoy' : 'Últimos 7 días'}</Boton>)}
+        className={seleccion.periodo === periodo
+  ? 'bg-[#245B40] font-medium text-white'
+  : 'bg-white text-[#245B40] hover:bg-[#E2EFE5]'}>{periodo === 'hoy' ? 'Hoy' : 'Últimos 7 días'}</Boton>)}
     </div>
     <Texto className="text-xs text-[#64766A]">Consulta fijada: desde {fechaLectura(seleccion.rango.desde)} hasta {fechaLectura(seleccion.rango.hasta)}. Hora de Perú.</Texto>
     <div className="grid grid-cols-2 gap-3">
-      <div><label htmlFor="agrupacion-historial" className="mb-2 block text-sm">Mostrar</label>
+      <div><label htmlFor="agrupacion-historial" className="mb-2 block text-sm font-semibold text-[#233D32]">Mostrar</label>
         <Seleccion id="agrupacion-historial" value={seleccion.agrupacion} onChange={(evento) => setSeleccion((actual) => ({ ...actual, agrupacion: evento.target.value as AgrupacionHistorial, pagina: 1 }))}>
           <option value="none">Lecturas</option><option value="hour">Promedios por hora</option>
         </Seleccion>
       </div>
-      <div><label htmlFor="limite-historial" className="mb-2 block text-sm">Por página</label>
+      <div><label htmlFor="limite-historial" className="mb-2 block text-sm font-semibold text-[#233D32]">Por página</label>
         <Seleccion id="limite-historial" value={seleccion.limite} onChange={(evento) => setSeleccion((actual) => ({ ...actual, limite: Number(evento.target.value), pagina: 1 }))}>
           {[50, 100, 200, 500].map((limite) => <option key={limite} value={limite}>{limite}</option>)}
         </Seleccion>
       </div>
     </div>
     <Boton type="button" onClick={() => setSeleccion((actual) => ({ ...actual, rango: rangoHistorial(actual.periodo), pagina: 1, revision: actual.revision + 1 }))}
-      className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#D8DEDA] px-4 text-sm"><RefreshCw className="h-4 w-4" aria-hidden="true" />Actualizar lecturas</Boton>
+      className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#D8DEDA] bg-white px-4 text-sm font-medium text-[#245B40] shadow-sm transition-colors hover:bg-[#E2EFE5]"><RefreshCw className="h-4 w-4" aria-hidden="true" />Actualizar lecturas</Boton>
     <ConsultaHistorial key={`${sensor.id}:${JSON.stringify(consulta)}:${seleccion.revision}`} sensor={sensor} consulta={consulta} periodo={seleccion.periodo}
       onPagina={(pagina) => setSeleccion((actual) => ({ ...actual, pagina }))} />
-    <Texto className="text-xs text-[#64766A]">Cuando una lectura no tiene hora de medición se utiliza su hora de recepción. Los datos enviados con retraso pueden actualizar el historial; Actualizar lecturas inicia una consulta nueva.</Texto>
-    <Boton type="button" variante="verde" onClick={() => onTiempoReal(sensor.tipo)}><Radio className="h-5 w-5" aria-hidden="true" />Abrir pantalla de tiempo real</Boton>
-    <Texto className="text-center text-xs text-[#64766A]">En tiempo real podrás iniciar y detener una sesión con el controlador conectado.</Texto>
   </div>
 }
